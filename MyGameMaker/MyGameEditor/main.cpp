@@ -13,6 +13,7 @@
 
 #include "MyGameEngine/Camera.h"
 #include "MyGameEngine/MyMesh.h"
+#include "MyGameEngine/Mesh.h"
 using namespace std;
 
 struct Triangle {
@@ -47,6 +48,104 @@ struct Triangle {
 
 	}
 };
+//
+//struct House {
+//	Transform transform;
+//	glm::u8vec3 color;
+//	Mesh mesh;
+//
+//	void InitMesh(const char* file_path) {
+//
+//		const aiScene* scene = aiImportFile(file_path, aiProcessPreset_TargetRealtime_MaxQuality);
+//
+//		if (scene != nullptr && scene->HasMeshes()) {
+//			for (unsigned int i = 0; i < scene->mNumMeshes; ++i) {
+//				num_vertex = scene->mMeshes[i]->mNumVertices;
+//				vertex = new float[num_vertex * 3];
+//				memcpy(vertex, scene->mMeshes[i]->mVertices, sizeof(float) * num_vertex * 3);
+//
+//				if (scene->mMeshes[i]->HasFaces()) {
+//					num_index = scene->mMeshes[i]->mNumFaces * 3;
+//					index = new unsigned int[num_index];
+//					for (unsigned int j = 0; j < scene->mMeshes[i]->mNumFaces; ++j) {
+//						if (scene->mMeshes[i]->mFaces[j].mNumIndices != 3) {
+//							std::cout << "Warning: La geometría no es un triángulo." << std::endl;
+//						}
+//						else {
+//							memcpy(&index[j * 3], scene->mMeshes[i]->mFaces[j].mIndices, 3 * sizeof(unsigned int));
+//						}
+//					}
+//				}
+//				if (scene->HasMaterials()) {
+//					aiString texturePath;
+//					if (scene->mMaterials[scene->mMeshes[i]->mMaterialIndex]->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
+//						LoadTexture(texturePath.C_Str());
+//					}
+//				}
+//			}
+//		}
+//		else {
+//			std::cout << "Error: No se pudo cargar la escena correctamente." << std::endl;
+//		}
+//		glm::vec3 vertices[] = {
+//			glm::vec3(-size, -size, 0),
+//			glm::vec3(size, -size, 0),
+//			glm::vec3(0, size, 0)
+//		};
+//		glm::u8vec1 colors[] = {
+//			glm::u8vec3(255,0,0),
+//			glm::u8vec3(0, 255,0),
+//			glm::u8vec3(255,0,0)
+//		};
+//
+//		unsigned int indices[] = { 0, 1, 2 };
+//
+//		mesh.load(vertices, 3, indices, 3);
+//	}
+//
+//	void draw() const {
+//		glPushMatrix();
+//		glMultMatrixd(&transform.mat()[0][0]);
+//		glColor3ub(color.r, color.g, color.b);
+//		mesh.draw();
+//		glPopMatrix();
+//	}
+//};
+
+/*
+
+struct Triangle {
+	Transform transform;
+	glm::u8vec3 color;
+	Mesh mesh;
+
+	void InitMesh(double size) {
+		glm::vec3 vertices[] = {
+			glm::vec3(-size, -size, 0),
+			glm::vec3(size, -size, 0),
+			glm::vec3(0, size, 0)
+		};
+		glm::u8vec1 colors[] = {
+			glm::u8vec3(255,0,0),
+			glm::u8vec3(0, 255,0),
+			glm::u8vec3(255,0,0)
+		};
+
+		unsigned int indices[] = { 0, 1, 2 };
+
+		mesh.load(vertices, 3, indices, 3);
+	}
+
+	void draw() const {
+		glPushMatrix();
+		glMultMatrixd(&transform.mat()[0][0]);
+		glColor3ub(color.r, color.g, color.b);
+		mesh.draw();
+		glPopMatrix();
+	}
+};
+*/
+
 
 struct Cube {
 	Transform transform;
@@ -113,6 +212,8 @@ static Triangle green_triangle;
 static Triangle blue_triangle;
 static Cube cube;
 static MyMesh loadedMesh;
+
+
 
 //A bool to get all the keys if pressed
 bool keyStates[256] = { false };

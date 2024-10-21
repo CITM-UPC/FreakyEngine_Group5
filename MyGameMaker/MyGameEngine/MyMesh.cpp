@@ -119,7 +119,7 @@ void MyMesh::LoadTexture(const char* texture_path) {
     // Obtener los datos de la imagen cargada
     int img_width = ilGetInteger(IL_IMAGE_WIDTH);
     int img_height = ilGetInteger(IL_IMAGE_HEIGHT);
-    int img_bpp = ilGetInteger(IL_IMAGE_BPP);  // Bytes per pixel
+    int img_bpp = ilGetInteger(IL_IMAGE_BPP); 
     int img_format = ilGetInteger(IL_IMAGE_FORMAT);
     unsigned char* img_data = ilGetData();
 
