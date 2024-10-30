@@ -136,7 +136,24 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+<<<<<<< Updated upstream
     <ClCompile Include="main.cpp" />
+=======
+    <ClCompile Include="BasicShapesManager.cpp" />
+    <ClCompile Include="Console.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="MyGui.cpp" />
+    <ClCompile Include="MyWindow.cpp" />
+    <ClCompile Include="SceneManager.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="BasicShapesManager.h" />
+    <ClInclude Include="Console.h" />
+    <ClInclude Include="main.h" />
+    <ClInclude Include="MyGui.h" />
+    <ClInclude Include="MyWindow.h" />
+    <ClInclude Include="SceneManager.h" />
+>>>>>>> Stashed changes
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

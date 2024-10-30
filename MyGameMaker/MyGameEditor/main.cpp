@@ -12,7 +12,21 @@
 
 
 #include "MyGameEngine/Camera.h"
+<<<<<<< Updated upstream
 #include "MyGameEngine/MyMesh.h"
+=======
+#include "MyGameEngine/Mesh.h"
+#include "MyGameEngine/GameObject.h"
+#include "MyWindow.h"
+#include "BasicShapesManager.h"
+#include "MyGui.h"
+#include "Console.h"
+#include "SceneManager.h"
+
+
+
+
+>>>>>>> Stashed changes
 using namespace std;
 
 struct Triangle {
@@ -190,24 +204,122 @@ static void mouseWheel_func(int wheel, int direction, int x, int y) {
 }
 
 static void idle_func() {
+<<<<<<< Updated upstream
 	//animate triangles
 	red_triangle.transform.rotate(0.001, vec3(0, 1, 0));
 	green_triangle.transform.rotate(0.001, vec3(1, 0, 0));
 	blue_triangle.transform.rotate(0.001, vec3(0, 0, 1));
 	cube.transform.rotate(0.001, vec3(0, 1, 1));
 	glutPostRedisplay();
+=======
+    float move_speed = 0.1f;
+    const Uint8* state = SDL_GetKeyboardState(NULL);
+
+
+    if (state[SDL_SCANCODE_LSHIFT] || state[SDL_SCANCODE_RSHIFT]) {
+        move_speed = 0.2f;
+    }
+    if (rightMouseButtonDown) {
+
+        if (state[SDL_SCANCODE_W]) {
+            std::cout << "Moving camera forward." << std::endl;
+            camera.transform().translate(glm::vec3(0, 0, move_speed));
+
+            Console::Instance().Log("Moving camera forward.");
+        }
+
+        if (state[SDL_SCANCODE_S]) {
+            std::cout << "Moving camera backward." << std::endl;
+            camera.transform().translate(glm::vec3(0, 0, -move_speed));
+
+            Console::Instance().Log("Moving camera backward.");
+        }
+
+        if (state[SDL_SCANCODE_A]) {
+            std::cout << "Moving camera left." << std::endl;
+            camera.transform().translate(glm::vec3(move_speed, 0, 0));
+			Console::Instance().Log("Moving camera left.");
+        }
+
+        if (state[SDL_SCANCODE_D]) {
+            std::cout << "Moving camera right." << std::endl;
+            camera.transform().translate(glm::vec3(-move_speed, 0, 0));
+			Console::Instance().Log("Moving camera right.");
+        }
+
+        if (state[SDL_SCANCODE_Q]) {
+            std::cout << "Moving camera up." << std::endl;
+            camera.transform().translate(glm::vec3(0, move_speed, 0));
+			Console::Instance().Log("Moving camera up.");
+        }
+
+        if (state[SDL_SCANCODE_E]) {
+            std::cout << "Moving camera down." << std::endl;
+            camera.transform().translate(glm::vec3(0, -move_speed, 0));
+			Console::Instance().Log("Moving camera down.");
+        }
+    }
+
+    if (state[SDL_SCANCODE_F] && !fKeyDown && SceneManager::selectedObject != NULL) {
+        camera.transform().pos() = SceneManager::selectedObject->transform().pos() + vec3(0, 1, 4);
+        fKeyDown = true;
+        camera.transform().lookAt(SceneManager::selectedObject->transform().pos());
+        std::cout << "Camera looking at target." << std::endl;
+        Console::Instance().Log("Camera looking at target.");
+
+    }
+    else if (!state[SDL_SCANCODE_F]) {
+        fKeyDown = false;
+    }
+    camera.transform().alignCamera();
+}
+//debug, showing the bounding boxes, not finished
+inline static void glVertex3(const vec3& v) { glVertex3dv(&v.x); }
+static void drawWiredQuad(const vec3& v0, const vec3& v1, const vec3& v2, const vec3& v3) {
+    glBegin(GL_LINE_LOOP);
+    glVertex3(v0);
+    glVertex3(v1);
+    glVertex3(v2);
+    glVertex3(v3);
+    glEnd();
 }
 
+static void drawBoundingBox(const BoundingBox& bbox) {
+    glLineWidth(2.0);
+    drawWiredQuad(bbox.v000(), bbox.v001(), bbox.v011(), bbox.v010());
+    drawWiredQuad(bbox.v100(), bbox.v101(), bbox.v111(), bbox.v110());
+    drawWiredQuad(bbox.v000(), bbox.v001(), bbox.v101(), bbox.v100());
+    drawWiredQuad(bbox.v010(), bbox.v011(), bbox.v111(), bbox.v110());
+    drawWiredQuad(bbox.v000(), bbox.v010(), bbox.v110(), bbox.v100());
+    drawWiredQuad(bbox.v001(), bbox.v011(), bbox.v111(), bbox.v101());
+
+}
+
+void mouseWheel_func(int direction) {
+    camera.transform().translate(vec3(0, 0, direction * 0.1));
+>>>>>>> Stashed changes
+}
+
+
+
+
 int main(int argc, char* argv[]) {
+<<<<<<< Updated upstream
 	// Iniit window and context
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
 	glutInitWindowSize(1280, 720);
 	glutCreateWindow("Glut Simple Example");
+=======
+    ilInit();
+    iluInit();
+	
+>>>>>>> Stashed changes
 
 	// Init OpenGL
 	init_opengl();
 
+<<<<<<< Updated upstream
 	// Init camera
 	camera.transform().pos() = vec3(0, 1, 4);
 	camera.transform().rotate(glm::radians(180.0), vec3(0, 1, 0));
@@ -220,6 +332,92 @@ int main(int argc, char* argv[]) {
 		std::cout << "Error: No se pudo cargar la malla correctamente." << std::endl;
 		return EXIT_FAILURE;
 	}
+=======
+ 
+
+    // Posición inicial de la cámara
+    camera.transform().pos() = vec3(0, 1, 4);
+    camera.transform().rotate(glm::radians(180.0), vec3(0, 1, 0));
+    SceneManager::spawnBakerHouse();
+
+	
+
+    while (window.isOpen()) {
+        const auto t0 = hrclock::now();
+		handleAltKey();
+        // Obtener la posición actual del mouse
+        glm::vec2 mouseScreenPos = getMousePosition();       
+
+        display_func(); // Renderizar la escena
+        gui.render();
+        window.swapBuffers();
+
+
+
+        const auto t1 = hrclock::now();
+        const auto dt = t1 - t0;
+        if (dt < FRAME_DT) this_thread::sleep_for(FRAME_DT - dt);
+
+        SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
+        
+        while (SDL_PollEvent(&event))
+        {
+            // Obtener matrices de proyección y vista de la cámara
+            glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WINDOW_SIZE.x / WINDOW_SIZE.y, 0.1f, 100.0f);
+            glm::mat4 view = camera.view();
+          
+            gui.processEvent(event);
+
+            switch (event.type)
+            {
+			case SDL_QUIT:
+				window.close();
+				break;
+            case SDL_DROPFILE:               
+				cout << "File dropped: " << event.drop.file << endl;
+                handleFileDrop(event.drop.file, projection, view);
+                SDL_free(event.drop.file);
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+                if (event.button.button == SDL_BUTTON_LEFT) {
+                    // Raycast para detectar el objeto debajo del mouse
+                    SceneManager::selectedObject = raycastFromMouseToGameObject(mouseScreenPos.x, mouseScreenPos.y, projection, view, WINDOW_SIZE);
+                }
+            case SDL_MOUSEBUTTONUP:
+                mouseButton_func(event.button.button, event.button.state, event.button.x, event.button.y);
+                break;
+            case SDL_MOUSEMOTION:
+                mouseMotion_func(event.motion.x, event.motion.y);
+                break;
+            case SDL_MOUSEWHEEL:
+                mouseWheel_func(event.wheel.y);
+                break;
+            case SDL_KEYDOWN:
+                glm::vec3 mouseWorldPos = screenToWorld(mouseScreenPos, 10.0f, projection, view);
+
+                // Crear figuras en la posición 3D calculada
+                switch (event.key.keysym.sym) {
+
+                case SDLK_1:  // Crear Triángulo
+                    BasicShapesManager::createFigure(1, SceneManager::gameObjectsOnScene, 1.0, mouseWorldPos);
+                    break;
+                case SDLK_2:  // Crear Cuadrado
+
+                    BasicShapesManager::createFigure(2, SceneManager::gameObjectsOnScene, 1.0, mouseWorldPos);
+                    break;
+                case SDLK_3:  // Crear Cubo
+
+                    BasicShapesManager::createFigure(3, SceneManager::gameObjectsOnScene, 1.0, mouseWorldPos);
+                    break;
+                default:
+                    break;
+                }
+                break;
+			default:
+				cout << event.type << endl;
+				break;
+            }
+>>>>>>> Stashed changes
 
 
 	//Init cube
