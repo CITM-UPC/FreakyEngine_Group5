@@ -21,6 +21,7 @@
 #include "MyGui.h"
 #include "SceneManager.h"
 #include "Console.h"
+#include "MyGameEngine/Transform.h"
 
 using namespace std;
 using hrclock = chrono::high_resolution_clock;
@@ -345,7 +346,43 @@ void mouseMotion_func(int x, int y) {
     
 }
 
+void removeObjectFromScene(const std::string& objectName) {
+    auto& objects = SceneManager::gameObjectsOnScene;
+    objects.erase(std::remove_if(objects.begin(), objects.end(),
+        [&objectName](GameObject obj) {
+            return obj.getName() == objectName;
+        }), objects.end());
+}
+
+void extractTransformFromMatrix(
+    const glm::mat4& matrix,
+    glm::vec3& translation,
+    glm::quat& rotation,
+    glm::vec3& scale
+) {
+    // Extraer la traslación directamente de la matriz
+    translation = glm::vec3(matrix[3]);
+
+    // Extraer escala como la longitud de los vectores de las columnas de la matriz
+    scale.x = glm::length(glm::vec3(matrix[0])); // Longitud del eje X
+    scale.y = glm::length(glm::vec3(matrix[1])); // Longitud del eje Y
+    scale.z = glm::length(glm::vec3(matrix[2])); // Longitud del eje Z
+
+    // Normalizar las columnas para extraer la rotación
+    glm::mat3 rotationMatrix = glm::mat3(matrix);
+    rotationMatrix[0] /= scale.x; // Normalizar eje X
+    rotationMatrix[1] /= scale.y; // Normalizar eje Y
+    rotationMatrix[2] /= scale.z; // Normalizar eje Z
+
+    // Convertir la matriz de rotación en un cuaternión
+    rotation = glm::quat_cast(rotationMatrix);
+}
+double quatToDouble(const glm::quat& rotation) {
+    return glm::degrees(glm::eulerAngles(rotation).y);
+}
 bool fKeyDown = false;
+
+
 static void idle_func() {
     float move_speed = 0.1f;
     const Uint8* state = SDL_GetKeyboardState(NULL);
@@ -360,27 +397,72 @@ static void idle_func() {
     if (state[SDL_SCANCODE_I]) {
         // Verificar si hay un objeto seleccionado y al menos un objeto en la escena
         if (!SceneManager::gameObjectsOnScene.empty() && SceneManager::selectedObject) {
+            // Obtener el objeto raíz (root) y el objeto seleccionado
+            GameObject* root = &SceneManager::gameObjectsOnScene[0];
+            GameObject* selected = SceneManager::selectedObject;
+			string objectName = selected->getName();
 
-                glm::mat4 parentWorldInverse = glm::inverse(SceneManager::gameObjectsOnScene[0].worldTransform().mat()); // Matriz inversa del padre
-                glm::mat4 selectedWorldTransform = SceneManager::selectedObject->worldTransform().mat();        // Transformación mundial del seleccionado
-                glm::mat4 localTransform = parentWorldInverse * selectedWorldTransform;     // Transformación local al padre
+            // Parentear el objeto seleccionado al root
+            root->emplaceChild(*selected);
 
-                // Desparentar del padre anterior (si aplica)
-                
+            // Guardar la transformación global original del objeto seleccionado
+            glm::vec3 originalWorldPos = selected->worldTransform().pos();
+            int xpos = originalWorldPos.x;
+            int ypos = originalWorldPos.y;
+            int zpos = originalWorldPos.z;
 
-                // Parentear al nuevo padre
-                SceneManager::gameObjectsOnScene[0].emplaceChild(*SceneManager::selectedObject);
+            glm::mat4 parentWorldInverse = glm::inverse(root->worldTransform().mat());
+            glm::vec4 localPosition = parentWorldInverse * glm::vec4(originalWorldPos, 1.0f);
 
-                // Actualizar la transformación local del seleccionado
-                //selected->transform().mat() = localTransform; // Ajustar su transformación local al nuevo padre
+            
 
-                std::cout << "Object parented to root." << std::endl;
+            // Actualizar la transformación local del objeto seleccionado
+            selected->transform().translate(originalWorldPos);
 
+            // Eliminar el objeto de la lista de objetos raíz en la escena
+            auto& objects = SceneManager::gameObjectsOnScene;
+            objects.erase(
+                std::remove_if(objects.begin(), objects.end(),
+                    [&](const GameObject& obj) { return &obj == selected; }),
+                objects.end()
+            );
+
+            // Confirmar la operación
+            std::cout << "Object parented to root and position maintained." << std::endl;
         }
         else {
+            // Mensaje de error si no se cumplen las condiciones
+            std::cout << "No selected object or no objects in scene." << std::endl;
+        }
+    } 
+    if (state[SDL_SCANCODE_U]) {
+        // Verificar si hay un objeto seleccionado y al menos un objeto en la escena
+        if (!SceneManager::gameObjectsOnScene.empty() && SceneManager::selectedObject) {
+
+            // Obtener el objeto seleccionado
+            GameObject* selected = SceneManager::selectedObject;
+
+            for (auto& child : selected->children()) {
+                // Añadir cada child a la lista de todos los objetos en la escena
+                SceneManager::gameObjectsOnScene.push_back(child);
+				//selected->removeChild(child);
+                
+            }
+
+            // Confirmar la operación
+            std::cout << "All children of the selected object have been unparented and added to the scene." << std::endl;
+              
+        }
+        else {
+            // Mensaje de error si no se cumplen las condiciones
             std::cout << "No selected object or no objects in scene." << std::endl;
         }
     }
+
+
+
+
+
 
     if (state[SDL_SCANCODE_LSHIFT] || state[SDL_SCANCODE_RSHIFT]) {
         move_speed = 0.2f;
