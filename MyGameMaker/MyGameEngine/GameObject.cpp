@@ -108,3 +108,4 @@ BoundingBox GameObject::worldBoundingBox() const {
     for (const auto& child : children()) bbox = bbox + child.worldBoundingBox();
     return bbox;
 }
+

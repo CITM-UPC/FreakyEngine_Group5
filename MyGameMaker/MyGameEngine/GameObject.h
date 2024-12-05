@@ -16,18 +16,13 @@ private:
     Transform _transform;                       // Transformación del objeto
     glm::u8vec3 _color = glm::u8vec3(255, 255, 255); // Color del objeto
     Texture _texture;                           // Textura del objeto
-    std::shared_ptr<Mesh> _mesh_ptr;           // Puntero a la malla
-    //std::vector<std::shared_ptr<Component>> _components; // Lista de componentes
+    std::shared_ptr<Mesh> _mesh_ptr;            // Puntero a la malla
     bool _active = true;                        // Estado de activación
-    std::string name;
-	mutable bool hasCreatedCheckerTexture = false;		// Indica si la textura de cuadros ha sido creada
-    // Restaura la textura original del objeto
-	
+    std::string name;                           // Nombre del objeto
+    mutable bool hasCreatedCheckerTexture = false; // Indica si la textura de cuadros ha sido creada
+
 public:
     bool hasCheckerTexture = false;
-    // Constructor y destructor
-    /*GameObject(const std::string& name = "New GameObject");
-    ~GameObject();*/
 
     // Métodos para acceder y modificar propiedades
     const auto& transform() const { return _transform; }
@@ -45,13 +40,15 @@ public:
     const std::string& getName() const { return name; }
     void setName(const std::string& newName) { name = newName; }
 
-    // Gestión de componentes
-    //void addComponent(std::shared_ptr<Component> component);
-    //void removeComponent(std::shared_ptr<Component> component);
-    //std::vector<std::shared_ptr<Component>> getComponents() const;
+    bool operator==(const GameObject& other) const {
+        // Comparar los objetos por el nombre, o cualquier criterio único
+        return this->name == other.name;
+    }
 
     // Transformación global del objeto
-    Transform worldTransform() const { return isRoot() ? _transform : parent().worldTransform() * _transform; }
+    Transform worldTransform() const {
+        return isRoot() ? _transform : parent().worldTransform() * _transform;
+    }
 
     // Cálculo de las cajas de colisión
     BoundingBox localBoundingBox() const; // Definir en el .cpp
@@ -69,19 +66,20 @@ public:
     // Método para dibujar el objeto
     void draw() const; // Definir en el .cpp
 
-    // Métodos de ciclo de vida
-    //virtual void awake();      // Inicialización
-    //virtual void start();      // Llamado al inicio
-    //virtual void update(float deltaTime); // Lógica de actualización
-    //virtual void onDestroy();  // Limpieza antes de eliminar el objeto
-
     // Activación del objeto
     void setActive(bool active) { _active = active; }
     bool isActive() const { return _active; }
 
+    // Inicialización de textura de cuadros
     void initializeCheckerTexture();
 
-   
+    // Método para desparenteo
+    void unparent() {
+        if (!isRoot()) {              // Si tiene un padre
+            parent().removeChild(*this); // Eliminar este objeto del padre
+            _parent = nullptr;         // Actualizar la referencia del padre
+        }
+    }
+
+
 };
-
-

@@ -222,49 +222,71 @@ void MyGUI::ShowLibraryVerions(bool* p_open)
     ImGui::End();
 }
 
-void MyGUI::ShowHierarchy() 
+void MyGUI::ShowHierarchy()
 {
     ImGui::SetNextWindowSize(ImVec2(300, 700), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(0, 20), ImGuiCond_Always);
+
     if (ImGui::Begin("Hierarchy", NULL, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
-        // Iterar sobre todos los objetos en la escena
-        for (auto& go : SceneManager::gameObjectsOnScene) 
-        {
-            if (SceneManager::gameObjectsOnScene.empty()) continue;
+        static GameObject* draggedObject = nullptr;
 
-            static char newName[128] = "";
-            static bool renaming = false;
-            static GameObject* renamingObject = nullptr;
+        // Lambda para mostrar recursivamente el árbol de jerarquía
+        auto showGameObject = [&](GameObject& go, auto& showGameObject) -> void {
+            ImGuiTreeNodeFlags nodeFlags = ImGuiTreeNodeFlags_OpenOnArrow |
+                ImGuiTreeNodeFlags_OpenOnDoubleClick |
+                ImGuiTreeNodeFlags_SpanAvailWidth;
 
-            bool isSelected = (SceneManager::selectedObject == &go);
-            if (ImGui::Selectable(go.getName().c_str(), isSelected))
-            {
+            bool hasChildren = !go.children().empty();
+            if (SceneManager::selectedObject == &go) {
+                nodeFlags |= ImGuiTreeNodeFlags_Selected;
+            }
+            if (!hasChildren) {
+                nodeFlags |= ImGuiTreeNodeFlags_Leaf;
+            }
+
+            bool nodeOpen = ImGui::TreeNodeEx(go.getName().c_str(), nodeFlags);
+            if (ImGui::IsItemClicked()) {
                 SceneManager::selectedObject = &go;
             }
 
-            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) 
-            {
-                renaming = true;
-                renamingObject = &go;
-                strcpy_s(newName, go.getName().c_str());
+            // Drag source
+            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
+                draggedObject = &go;
+                ImGui::SetDragDropPayload("HIERARCHY_DRAG", &draggedObject, sizeof(GameObject*));
+                ImGui::Text("Dragging: %s", go.getName().c_str());
+                ImGui::EndDragDropSource();
             }
 
-            if (renaming && renamingObject == &go) 
-            {
-                ImGui::SetKeyboardFocusHere();
-                if (ImGui::InputText("##rename", newName, IM_ARRAYSIZE(newName), ImGuiInputTextFlags_EnterReturnsTrue))
-                {
-                    go.setName(newName);
-                    renaming = false;
+            // Drop target
+            if (ImGui::BeginDragDropTarget()) {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("HIERARCHY_DRAG")) {
+                    GameObject* droppedObject = *(GameObject**)payload->Data;
+                    if (droppedObject && droppedObject != &go) {
+                        droppedObject->parent().removeChild(*droppedObject);
+                        go.emplaceChild(std::move(*droppedObject));
+                    }
                 }
-                if (ImGui::IsItemDeactivated() || ImGui::IsKeyPressed(ImGuiKey_Escape)) {
-                    renaming = false;
+                ImGui::EndDragDropTarget();
+            }
+
+            if (nodeOpen) {
+                for (auto& child : go.children()) {
+                    showGameObject(child, showGameObject);
                 }
+                ImGui::TreePop();
+            }
+            };
+
+        // Recorrer todos los objetos raíz
+        for (auto& go : SceneManager::gameObjectsOnScene) {
+            if (go.isRoot()) {
+                showGameObject(go, showGameObject);
             }
         }
         ImGui::End();
     }
 }
+
 //ALGO FALLA , HAY QUE REVISARLO
 void MyGUI::renderInspector() {
     ImGui::SetNextWindowSize(ImVec2(300, 700), ImGuiCond_Always);
