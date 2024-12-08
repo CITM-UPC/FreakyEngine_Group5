@@ -18,10 +18,11 @@ private:
     Texture _texture;                           // Textura del objeto
     std::shared_ptr<Mesh> _mesh_ptr;            // Puntero a la malla
     bool _active = true;                        // Estado de activación
-    std::string name;                           // Nombre del objeto
+                               // Nombre del objeto
     mutable bool hasCreatedCheckerTexture = false; // Indica si la textura de cuadros ha sido creada
 
 public:
+    std::string name;
     bool hasCheckerTexture = false;
 
     // Métodos para acceder y modificar propiedades
@@ -44,10 +45,19 @@ public:
         // Comparar los objetos por el nombre, o cualquier criterio único
         return this->name == other.name;
     }
+    bool operator!=(const GameObject& other) const {
+        return !(*this == other);
+    }
 
     // Transformación global del objeto
     Transform worldTransform() const {
         return isRoot() ? _transform : parent().worldTransform() * _transform;
+    }
+    Transform localTransform() const {
+        return _transform;
+    }
+    void setTransform(const Transform& transform) {
+        _transform = transform;
     }
 
     // Cálculo de las cajas de colisión
@@ -73,11 +83,46 @@ public:
     // Inicialización de textura de cuadros
     void initializeCheckerTexture();
 
-    // Método para desparenteo
-    void unparent() {
-        if (!isRoot()) {              // Si tiene un padre
-            parent().removeChild(*this); // Eliminar este objeto del padre
-            _parent = nullptr;         // Actualizar la referencia del padre
+    // Verificar si un objeto es ancestro de otro
+    bool isAncestorOf(const GameObject& potentialDescendant) const {
+        const GameObject* current = &potentialDescendant;
+        std::unordered_set<const GameObject*> visited;
+
+        while (current != nullptr) {
+            // Verificar si hay ciclos
+            if (visited.count(current)) {
+                std::cerr << "Cycle detected in hierarchy!" << std::endl;
+                return false; // Evita ciclos
+            }
+            visited.insert(current);
+
+            // Si el actual es 'this', entonces 'this' es ancestro
+            if (current == this) return true;
+
+            // Subir al padre de manera segura
+            current = current->parent2();
+        }
+
+        return false; // No se encontró que 'this' sea ancestro
+    }
+
+
+    void Destroy()
+    {
+        if (!this) {
+            return;
+        }
+
+        //destroyed = true;
+
+        /*for (auto& component : components)
+        {
+            component.second->Destroy();
+        }*/
+
+        for (auto& child : children())
+        {
+            child.Destroy();
         }
     }
 

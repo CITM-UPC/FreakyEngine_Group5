@@ -436,27 +436,8 @@ static void idle_func() {
         }
     } 
     if (state[SDL_SCANCODE_U]) {
-        // Verificar si hay un objeto seleccionado y al menos un objeto en la escena
-        if (!SceneManager::gameObjectsOnScene.empty() && SceneManager::selectedObject) {
-
-            // Obtener el objeto seleccionado
-            GameObject* selected = SceneManager::selectedObject;
-
-            for (auto& child : selected->children()) {
-                // Añadir cada child a la lista de todos los objetos en la escena
-                SceneManager::gameObjectsOnScene.push_back(child);
-				//selected->removeChild(child);
-                
-            }
-
-            // Confirmar la operación
-            std::cout << "All children of the selected object have been unparented and added to the scene." << std::endl;
-              
-        }
-        else {
-            // Mensaje de error si no se cumplen las condiciones
-            std::cout << "No selected object or no objects in scene." << std::endl;
-        }
+		SceneManager::selectedObject->setParent(SceneManager::gameObjectsOnScene[0]);
+        SceneManager::selectedObject = nullptr;
     }
 
 

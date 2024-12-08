@@ -36,3 +36,12 @@ void SceneManager::LoadGameObject(const std::string& filePath) {
 GameObject* SceneManager::getGameObject(int index) {
 	return &gameObjectsOnScene[index];
 }
+
+
+void SceneManager::RemoveGameObject(GameObject* gameObject) {
+    auto it = std::find_if(gameObjectsOnScene.begin(), gameObjectsOnScene.end(), 
+                           [gameObject](const GameObject& obj) { return &obj == gameObject; });
+    if (it != gameObjectsOnScene.end()) {
+        gameObjectsOnScene.erase(it);
+    }
+}

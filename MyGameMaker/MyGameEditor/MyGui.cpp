@@ -222,25 +222,69 @@ void MyGUI::ShowLibraryVerions(bool* p_open)
     ImGui::End();
 }
 
-void MyGUI::ShowHierarchy()
-{
+GameObject* FindGameObjectRecursive(GameObject* parent, GameObject* target) {
+    if (parent == target) {
+        return parent;
+    }
+
+    for (auto& child : parent->children()) {
+        GameObject* found = FindGameObjectRecursive(&child, target);
+        if (found) {
+            return found;
+        }
+    }
+
+    return nullptr;
+}
+
+GameObject* FindGameObject(GameObject* target) {
+    for (auto& go : SceneManager::gameObjectsOnScene) {
+        GameObject* found = FindGameObjectRecursive(&go, target);
+        if (found) {
+            return found;
+        }
+    }
+
+    return nullptr;
+}
+
+void RemoveGameObject(GameObject* gameObject) {
+    if (!gameObject) {
+        //LOG(LogType::LOG_ERROR, "Error: Se ha intentado eliminar un GameObject nulo.");
+        return;
+    }
+
+    GameObject* foundObject = FindGameObject(gameObject);
+    if (!foundObject) {
+        //LOG(LogType::LOG_ERROR, "Error: El GameObject no se encuentra en la escena.");
+        return;
+    }
+
+    try {
+        foundObject->Destroy();
+    } catch (const std::exception& e) {
+        //LOG(LogType::LOG_ERROR, "Error al destruir el GameObject: %s", e.what());
+    }
+}
+
+
+
+void MyGUI::ShowHierarchy() {
     ImGui::SetNextWindowSize(ImVec2(300, 700), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(0, 20), ImGuiCond_Always);
 
-    if (ImGui::Begin("Hierarchy", NULL, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
+    if (ImGui::Begin("Hierarchy", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
         static GameObject* draggedObject = nullptr;
 
-        // Lambda para mostrar recursivamente el árbol de jerarquía
         auto showGameObject = [&](GameObject& go, auto& showGameObject) -> void {
             ImGuiTreeNodeFlags nodeFlags = ImGuiTreeNodeFlags_OpenOnArrow |
                 ImGuiTreeNodeFlags_OpenOnDoubleClick |
                 ImGuiTreeNodeFlags_SpanAvailWidth;
 
-            bool hasChildren = !go.children().empty();
             if (SceneManager::selectedObject == &go) {
                 nodeFlags |= ImGuiTreeNodeFlags_Selected;
             }
-            if (!hasChildren) {
+            if (go.children().empty()) {
                 nodeFlags |= ImGuiTreeNodeFlags_Leaf;
             }
 
@@ -260,10 +304,23 @@ void MyGUI::ShowHierarchy()
             // Drop target
             if (ImGui::BeginDragDropTarget()) {
                 if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("HIERARCHY_DRAG")) {
+                    SceneManager::gameObjectsOnScene;
                     GameObject* droppedObject = *(GameObject**)payload->Data;
                     if (droppedObject && droppedObject != &go) {
-                        droppedObject->parent().removeChild(*droppedObject);
+                        
+                            // Quitar al objeto de su padre anterior
+                           /* if (!droppedObject->isRoot()) {
+                                droppedObject->unparent();
+                            }*/
+
+                            // Agregar como hijo del nuevo padre
+                            go.emplaceChild(std::move(*droppedObject));
                         go.emplaceChild(std::move(*droppedObject));
+                        droppedObject->setTransform(go.worldTransform() * droppedObject->localTransform());
+                        
+                       
+                        
+                        
                     }
                 }
                 ImGui::EndDragDropTarget();
@@ -277,7 +334,6 @@ void MyGUI::ShowHierarchy()
             }
             };
 
-        // Recorrer todos los objetos raíz
         for (auto& go : SceneManager::gameObjectsOnScene) {
             if (go.isRoot()) {
                 showGameObject(go, showGameObject);
