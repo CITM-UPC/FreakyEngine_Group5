@@ -147,6 +147,7 @@
   <ItemGroup>
     <ClCompile Include="BasicShapesManager.cpp" />
     <ClCompile Include="Console.cpp" />
+    <ClCompile Include="FileDropHandler.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MyGui.cpp" />
     <ClCompile Include="MyWindow.cpp" />
@@ -156,6 +157,7 @@
   <ItemGroup>
     <ClInclude Include="BasicShapesManager.h" />
     <ClInclude Include="Console.h" />
+    <ClInclude Include="FileDropHandler.h" />
     <ClInclude Include="MyGui.h" />
     <ClInclude Include="MyWindow.h" />
     <ClInclude Include="SceneManager.h" />

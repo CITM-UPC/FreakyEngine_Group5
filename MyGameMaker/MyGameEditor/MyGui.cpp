@@ -182,6 +182,7 @@ void MyGUI::ShowContentBrowser() {
             std::filesystem::path relativePath(fullPath);
             const wchar_t* itemPath = relativePath.c_str();
             ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t));
+            ImGui::Text("Dragging: %s", entry.c_str());
             ImGui::EndDragDropSource();
         }
 
@@ -204,6 +205,28 @@ void MyGUI::ShowContentBrowser() {
 
     ImGui::SliderFloat("Thumbnail Size", &thumbnailSize, 16, 512);
     ImGui::SliderFloat("Padding", &padding, 0, 32);
+
+    // Handle drag-and-drop target
+    if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
+            std::wstring droppedPath = (const wchar_t*)payload->Data;
+            std::string filePath(droppedPath.begin(), droppedPath.end());
+
+            // Load the dropped file as a new GameObject
+            std::string extension = filePath.substr(filePath.find_last_of(".") + 1);
+            if (extension == "fbx") {
+                SceneManager::LoadGameObject(filePath);
+            }
+            else if (extension == "png" || extension == "jpg" || extension == "jpeg") {
+                if (SceneManager::selectedObject) {
+                    auto imageTexture = std::make_shared<Image>();
+                    imageTexture->loadTexture(filePath);
+                    SceneManager::selectedObject->setTextureImage(imageTexture);
+                }
+            }
+        }
+        ImGui::EndDragDropTarget();
+    }
 
     ImGui::End();
 }
@@ -233,13 +256,13 @@ void MyGUI::ShowMainMenuBar() {
         ShowSpawnFigures(&show_spawn_figures_window);
     }
 
-    if (ImGui::BeginMainMenuBar()) 
+    if (ImGui::BeginMainMenuBar())
     {
-        if (ImGui::BeginMenu("File")) 
+        if (ImGui::BeginMenu("File"))
         {
             if (ImGui::BeginMenu("Import"))
             {
-                if (ImGui::MenuItem("FBX")) 
+                if (ImGui::MenuItem("FBX"))
                 {
                     const char* filterPatterns[1] = { "*.fbx" };
                     const char* filePath = tinyfd_openFileDialog(
@@ -250,14 +273,14 @@ void MyGUI::ShowMainMenuBar() {
                         NULL,
                         0
                     );
-                    if (filePath) 
+                    if (filePath)
                     {
                         SceneManager::LoadGameObject(filePath);
                     }
                 }
                 ImGui::EndMenu();
             }
-            if (ImGui::MenuItem("Quit")) 
+            if (ImGui::MenuItem("Quit"))
             {
 
                 SDL_Quit();
@@ -317,7 +340,7 @@ void MyGUI::ShowSpawnFigures(bool* p_open) {
     ImGui::Begin("Spawn Figures");
 
     if (ImGui::Button("Spawn Triangle")) {
-        BasicShapesManager::createFigure(1, SceneManager::gameObjectsOnScene, 1.0, vec3(0.0f,0.0f,0.0f) );
+        BasicShapesManager::createFigure(1, SceneManager::gameObjectsOnScene, 1.0, vec3(0.0f, 0.0f, 0.0f));
         SceneManager::selectedObject = &SceneManager::gameObjectsOnScene.back();
     }
 
@@ -341,11 +364,11 @@ float GetMemoryUsage() {
     return 0.0f; // Return 0 if there's an issue getting the memory info
 }
 
-void MyGUI::ShowMetricsWindow(bool* p_open) 
+void MyGUI::ShowMetricsWindow(bool* p_open)
 {
     static std::vector<float> fpsHistory;
     static std::vector<float> memoryHistory;
-    static const int maxSamples = 100;  
+    static const int maxSamples = 100;
 
     // Gather data for FPS
     float fps = ImGui::GetIO().Framerate;
@@ -363,12 +386,12 @@ void MyGUI::ShowMetricsWindow(bool* p_open)
 
     ImGui::Begin("Performance Graphs");
 
-    
+
     ImGui::Text("FPS Graph");
     ImGui::PlotLines("FPS", fpsHistory.data(), fpsHistory.size(), 0, nullptr, 0.0f, 100.0f, ImVec2(0, 80));
     ImGui::Text("Current FPS: %.1f", fps);
 
-    ImGui::Separator();  
+    ImGui::Separator();
 
     ImGui::Text("Memory Usage Graph");
     ImGui::PlotLines("Memory (MB)", memoryHistory.data(), memoryHistory.size(), 0, nullptr, 0.0f, 100.0f, ImVec2(0, 80));
@@ -475,7 +498,7 @@ void MyGUI::renderInspector() {
     ImGui::SetNextWindowPos(ImVec2(980, 20), ImGuiCond_Always);
     ImGui::Begin("Inspector");
 
-     static GameObject* persistentSelectedObject = nullptr;
+    static GameObject* persistentSelectedObject = nullptr;
 
     if (SceneManager::selectedObject != nullptr) {
         persistentSelectedObject = SceneManager::selectedObject;
@@ -485,13 +508,13 @@ void MyGUI::renderInspector() {
         if (ImGui::CollapsingHeader("Transform")) {
             glm::vec3 position = persistentSelectedObject->GetComponent<TransformComponent>()->transform().pos();
             glm::vec3 rotation = persistentSelectedObject->GetComponent<TransformComponent>()->transform().GetRotation();
-			glm::vec3 scale = persistentSelectedObject->GetComponent<TransformComponent>()->transform().extractScale(persistentSelectedObject->GetComponent<TransformComponent>()->transform().mat());
+            glm::vec3 scale = persistentSelectedObject->GetComponent<TransformComponent>()->transform().extractScale(persistentSelectedObject->GetComponent<TransformComponent>()->transform().mat());
 
             // Controles para la posición
             ImGui::Text("Position:");
             ImGui::PushItemWidth(100);
             if (ImGui::DragFloat("X##pos", &position.x, 0.1f)) {
-                persistentSelectedObject->GetComponent<TransformComponent>()->transform().setPos(position.x,position.y,position.z);
+                persistentSelectedObject->GetComponent<TransformComponent>()->transform().setPos(position.x, position.y, position.z);
             }
             ImGui::NewLine();
             if (ImGui::DragFloat("Y##pos", &position.y, 0.1f)) {
@@ -511,9 +534,9 @@ void MyGUI::renderInspector() {
             //  X Rotation
             float deltaX = 0.0f;
             if (ImGui::DragFloat("X##rot", &accumulatedRotation.x, 0.1f, -360.0f, 360.0f, "%.3f")) {
-                deltaX = accumulatedRotation.x - persistentSelectedObject->transform().GetRotation().x; 
+                deltaX = accumulatedRotation.x - persistentSelectedObject->transform().GetRotation().x;
                 if (deltaX != 0.0f) {
-                    persistentSelectedObject->transform().rotate(glm::radians(deltaX), glm::vec3(1.0f, 0.0f, 0.0f)); 
+                    persistentSelectedObject->transform().rotate(glm::radians(deltaX), glm::vec3(1.0f, 0.0f, 0.0f));
                 }
             }
             //  Y Rotation
@@ -521,7 +544,7 @@ void MyGUI::renderInspector() {
             if (ImGui::DragFloat("Y##rot", &accumulatedRotation.y, 0.1f, -360.0f, 360.0f, "%.3f")) {
                 deltaY = accumulatedRotation.y - persistentSelectedObject->transform().GetRotation().y;
                 if (deltaY != 0.0f) {
-                    persistentSelectedObject->transform().rotate(glm::radians(deltaY), glm::vec3(0.0f, 1.0f, 0.0f)); 
+                    persistentSelectedObject->transform().rotate(glm::radians(deltaY), glm::vec3(0.0f, 1.0f, 0.0f));
                 }
             }
             //  Z Rotation
@@ -529,7 +552,7 @@ void MyGUI::renderInspector() {
             if (ImGui::DragFloat("Z##rot", &accumulatedRotation.z, 0.1f, -360.0f, 360.0f, "%.3f")) {
                 deltaZ = accumulatedRotation.z - persistentSelectedObject->transform().GetRotation().z;
                 if (deltaZ != 0.0f) {
-                    persistentSelectedObject->transform().rotate(glm::radians(deltaZ), glm::vec3(0.0f, 0.0f, 1.0f)); 
+                    persistentSelectedObject->transform().rotate(glm::radians(deltaZ), glm::vec3(0.0f, 0.0f, 1.0f));
                 }
             }
 
@@ -560,7 +583,7 @@ void MyGUI::renderInspector() {
             ImGui::Checkbox("Show Normals (Per Triangle)", &showNormalsPerTriangle);
             ImGui::Checkbox("Show Normals (Per Face)", &showNormalsPerFace);
             if (showNormalsPerTriangle) {
-				persistentSelectedObject->mesh().drawNormals(persistentSelectedObject->transform().mat());
+                persistentSelectedObject->mesh().drawNormals(persistentSelectedObject->transform().mat());
             }
             if (showNormalsPerFace) {
                 persistentSelectedObject->mesh().drawNormalsPerFace(persistentSelectedObject->transform().mat());
@@ -568,15 +591,15 @@ void MyGUI::renderInspector() {
         }
         if (persistentSelectedObject->hasTexture() && ImGui::CollapsingHeader("Texture")) {
             Texture& texture = persistentSelectedObject->texture();
-                static bool showCheckerTexture = false;
-                ImGui::Text("Width: %d", texture.image().width() );
-                ImGui::Text("Heiht: %d", texture.image().height() );
-				
+            static bool showCheckerTexture = false;
+            ImGui::Text("Width: %d", texture.image().width());
+            ImGui::Text("Heiht: %d", texture.image().height());
+
             if (ImGui::Button("Toggle Checker Texture")) {
                 showCheckerTexture = !showCheckerTexture;
                 persistentSelectedObject->hasCheckerTexture = showCheckerTexture;
             }
-            
+
         }
     }
     else {
@@ -586,11 +609,11 @@ void MyGUI::renderInspector() {
     ImGui::End();
 }
 void MyGUI::render() {
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplSDL2_NewFrame();
-	ImGui::NewFrame();
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL2_NewFrame();
+    ImGui::NewFrame();
 
-	ShowMainMenuBar();
+    ShowMainMenuBar();
 
     ShowHierarchy();
     renderInspector();
@@ -600,16 +623,16 @@ void MyGUI::render() {
     ShowConsole();
 
 
-	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 }
 
 
 void MyGUI::handleEvent(const SDL_Event& event) {
-	ImGui_ImplSDL2_ProcessEvent(&event);
+    ImGui_ImplSDL2_ProcessEvent(&event);
 }
 
 void MyGUI::processEvent(const SDL_Event& event) {
-	ImGui_ImplSDL2_ProcessEvent(&event);
+    ImGui_ImplSDL2_ProcessEvent(&event);
 }

@@ -21,7 +21,7 @@ public:
 	void render();
 	void renderInspector();
 	void processEvent(const SDL_Event& event) override;
-	void handleEvent(const SDL_Event& event); 
+	void handleEvent(const SDL_Event& event);
 
 	void ShowMainMenuBar();
 	void ShowConsole();
@@ -56,4 +56,3 @@ private:
 
 
 };
-

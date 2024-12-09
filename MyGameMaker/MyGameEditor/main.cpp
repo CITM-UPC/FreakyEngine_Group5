@@ -24,6 +24,7 @@
 #include "MyGui.h"
 #include "SceneManager.h"
 #include "Console.h"
+#include "FileDropHandler.h"
 
 using namespace std;
 using hrclock = chrono::high_resolution_clock;
@@ -156,40 +157,7 @@ std::string getFileExtension(const std::string& filePath) {
     return filePath.substr(dotPosition + 1);
 }
 
-void handleFileDrop(const std::string& filePath, mat4 projection, mat4 view) {
-    auto extension = getFileExtension(filePath);
-    auto imageTexture = std::make_shared<Image>();
-    int mouseX, mouseY;
-    // Obtener posición actual del mouse
-    SDL_GetMouseState(&mouseX, &mouseY);
 
-    if (extension == "obj" || extension == "fbx" || extension == "dae") {
-       
-		SceneManager::LoadGameObject(filePath);
-		SceneManager::getGameObject(SceneManager::gameObjectsOnScene.size() - 1)->transform().pos() = screenToWorld(glm::vec2(mouseX, mouseY), 10.0f, projection, view);
-		SceneManager::selectedObject = &SceneManager::gameObjectsOnScene.back();
-
-    }
-    else if (extension == "png" || extension == "jpg" || extension == "bmp") {
-        imageTexture->loadTexture(filePath);
-        // Detectar si el mouse está sobre algún GameObject
-        GameObject* hitObject = raycastFromMouseToGameObject(mouseX, mouseY, projection, view, WINDOW_SIZE);
-        if (hitObject) {
-            // Si hay un GameObject debajo del mouse, aplicar la textura
-            hitObject->setTextureImage(imageTexture);
-            cout << "Texture applied to GameObject under mouse." << endl;
-            Console::Instance().Log("Texture applied to GameObject under mouse.");
-        }
-        else {
-            cout << "No GameObject under mouse to apply texture." << endl;
-            Console::Instance().Log("No GameObject under mouse to apply texture.");
-        }
-    }
-    else {
-        cout << "Unsupported file extension: " << extension << endl;
-        Console::Instance().Log("Unsupported file extension: ");
-    }
-}
 
 //Renderizado del suelo
 static void drawFloorGrid(int size, double step) {
@@ -500,6 +468,8 @@ int main(int argc, char* argv[]) {
     MyGUI gui(window.windowPtr(), window.contextPtr());
     initOpenGL();
 
+    FileDropHandler fileDropHandler;
+
     // Posición inicial de la cámara
     mainCamera.name = "Main Camera";
     mainCamera.AddComponent<CameraComponent>();
@@ -545,7 +515,7 @@ int main(int argc, char* argv[]) {
 				break;
             case SDL_DROPFILE:               
 				cout << "File dropped: " << event.drop.file << endl;
-                handleFileDrop(event.drop.file, projection, view);
+                fileDropHandler.handleFileDrop(event.drop.file, projection, view);
                 SDL_free(event.drop.file);
                 break;
             case SDL_MOUSEBUTTONDOWN:
