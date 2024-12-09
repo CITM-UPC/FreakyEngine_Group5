@@ -1,3 +1,4 @@
+#include <GL/glew.h>
 #include "MyGUI.h"
 #include "MyGameEngine/GameObject.h"
 #include "SceneManager.h"
@@ -6,20 +7,25 @@
 #include "Console.h"
 
 
-#include <imgui.h>
-
-
-#include <imgui_impl_sdl2.h>
-#include <imgui_impl_opengl3.h>
-#include <tinyfiledialogs/tinyfiledialogs.h> 
- 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_video.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_opengl.h>
 
+#include <imgui.h>
+#include <imgui_impl_sdl2.h>
+#include <imgui_impl_opengl3.h>
+#include <tinyfiledialogs/tinyfiledialogs.h>
+
+#include <dirent.h>
 #include <windows.h>
 #include <psapi.h>
+#include <codecvt>
+#include <locale>
+#include <filesystem>
+
+#include <string>
+#include <cstdlib>
 
 bool show_metrics_window = false;
 
@@ -40,12 +46,176 @@ MyGUI::MyGUI(SDL_Window* window, void* context) {
     ImGui::StyleColorsDark();
     ImGui_ImplSDL2_InitForOpenGL(window, context);
     ImGui_ImplOpenGL3_Init();
+
+    m_Renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+    // Load icons
+    m_DirectoryIcon = LoadTexture("Resources/Icons/ContentBrowser/DirectoryIcon.bmp");
+    m_FileIcon = LoadTexture("Resources/Icons/ContentBrowser/FileIcon.bmp");
+    m_BaseDirectory = "Assets";  // Adjust the path accordingly
+    m_CurrentDirectory = m_BaseDirectory;  // Start at the base directory
+}
+
+SDL_Texture* MyGUI::LoadTexture(const std::string& path) {
+    SDL_Surface* surface = SDL_LoadBMP(path.c_str());
+    if (!surface) {
+        std::cerr << "Failed to load texture: " << path << " - " << SDL_GetError() << std::endl;
+        return nullptr;
+    }
+
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(m_Renderer, surface);
+    SDL_FreeSurface(surface);
+
+    if (!texture) {
+        std::cerr << "Failed to create texture from surface: " << SDL_GetError() << std::endl;
+    }
+
+    return texture;
+}
+
+std::wstring ConvertToWideString(const std::string& str) {
+    // Determine the size of the resulting wide string
+    int wideSize = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
+    if (wideSize == 0) {
+        throw std::runtime_error("Error converting string to wide string.");
+    }
+
+    // Allocate a buffer for the wide string
+    std::wstring wideStr(wideSize, L'\0');
+
+    // Perform the conversion
+    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, &wideStr[0], wideSize);
+
+    // Remove the null terminator that MultiByteToWideChar adds
+    wideStr.resize(wideSize - 1);
+
+    return wideStr;
+}
+
+std::vector<std::string> MyGUI::GetDirectoryContents(const std::string& directory) {
+    std::vector<std::string> contents;
+
+    DIR* dir = opendir(directory.c_str());
+    if (dir) {
+        struct dirent* entry;
+        while ((entry = readdir(dir)) != nullptr) {
+            // Skip the special directories "." and ".."
+            if (entry->d_name[0] == '.') {
+                continue;
+            }
+            contents.push_back(entry->d_name);
+        }
+        closedir(dir);
+    }
+    else {
+        std::cerr << "Failed to open directory: " << directory << std::endl;
+    }
+
+    return contents;
+}
+
+void MyGUI::OnDropTarget() {
+    if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
+            // Get the dropped item path
+            const char* droppedPath = (const char*)payload->Data;
+            std::string filePath(droppedPath);
+
+            // Perform actions with the file path (e.g., load the file, spawn object, etc.)
+            std::cout << "Dropped file: " << filePath << std::endl;
+
+            // Example: Load a scene object or texture, based on the dropped file
+            SceneManager::LoadGameObject(filePath); // Or other actions based on the file type
+        }
+        ImGui::EndDragDropTarget();
+    }
+}
+
+void MyGUI::ShowContentBrowser() {
+    ImGui::Begin("Content Browser");
+
+    // Navigate to the parent directory if not at the base directory
+    if (m_CurrentDirectory != m_BaseDirectory) {
+        if (ImGui::Button("<-")) {
+            // Go to the parent directory
+            size_t lastSlash = m_CurrentDirectory.find_last_of("\\/");
+            if (lastSlash != std::string::npos) {
+                m_CurrentDirectory = m_CurrentDirectory.substr(0, lastSlash);
+            }
+        }
+    }
+
+    static float padding = 16.0f;
+    static float thumbnailSize = 128.0f;
+    float cellSize = thumbnailSize + padding;
+
+    float panelWidth = ImGui::GetContentRegionAvail().x;
+    int columnCount = (int)(panelWidth / cellSize);
+    if (columnCount < 1) columnCount = 1;
+
+    ImGui::Columns(columnCount, 0, false);
+
+    // Get contents of the current directory
+    auto contents = GetDirectoryContents(m_CurrentDirectory);
+
+    for (const auto& entry : contents) {
+        std::string fullPath = m_CurrentDirectory + "\\" + entry;
+
+        ImGui::PushID(entry.c_str());
+        bool isDirectory = (GetFileAttributesW(ConvertToWideString(fullPath).c_str()) & FILE_ATTRIBUTE_DIRECTORY) != 0;
+
+        // Choose the appropriate icon
+        SDL_Texture* icon = isDirectory ? m_DirectoryIcon : m_FileIcon;
+
+        // Display the texture as an image button in ImGui
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+        if (ImGui::ImageButton((void*)icon, { thumbnailSize, thumbnailSize })) {
+            if (isDirectory) {
+                // Navigate into the directory
+                m_CurrentDirectory = fullPath;
+            }
+        }
+
+        // Begin drag-and-drop source when hovering over an item
+        if (ImGui::BeginDragDropSource()) {
+            // Set the drag payload with the item's path
+            std::filesystem::path relativePath(fullPath);
+            const wchar_t* itemPath = relativePath.c_str();
+            ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t));
+            ImGui::EndDragDropSource();
+        }
+
+        ImGui::PopStyleColor();
+
+        // Double-click to open a directory
+        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+            if (isDirectory)
+                m_CurrentDirectory = fullPath;
+        }
+
+        // Show the file or directory name
+        ImGui::TextWrapped(entry.c_str());
+        ImGui::NextColumn();
+
+        ImGui::PopID();
+    }
+
+    ImGui::Columns(1);
+
+    ImGui::SliderFloat("Thumbnail Size", &thumbnailSize, 16, 512);
+    ImGui::SliderFloat("Padding", &padding, 0, 32);
+
+    ImGui::End();
 }
 
 MyGUI::~MyGUI() {
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplSDL2_Shutdown();
-	ImGui::DestroyContext();
+
+    if (m_DirectoryIcon) SDL_DestroyTexture(m_DirectoryIcon);
+    if (m_FileIcon) SDL_DestroyTexture(m_FileIcon);
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
 }
 
 void MyGUI::ShowMainMenuBar() {
@@ -393,7 +563,10 @@ void MyGUI::render() {
     ShowHierarchy();
     renderInspector();
 
+    ShowContentBrowser();
+
     ShowConsole();
+
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
