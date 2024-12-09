@@ -23,27 +23,12 @@ public:
         return _children.back();
     }
    
-    void removeChild(T& child) {
-        auto it = std::find_if(_children.begin(), _children.end(),
-            [&](const T& c) { return &c == &child; }); // Busca el hijo en la lista
-
-        if (it != _children.end()) {
-            it->_parent = nullptr; // Limpia el puntero al padre
-            _children.erase(it);   // Elimina el hijo de la lista
-        }
-        else {
-            std::cerr << "Attempted to remove a child that does not exist." << std::endl;
-        }
-    }
+    void removeChild(const T& child) { return _children.remove((child)); }
 
     void unparent() {
-        if (!isRoot() && _parent != nullptr) { // Verifica si tiene padre válido
-            std::cout << "Unparenting object: " << this << " from parent: " << _parent << std::endl;
-            _parent->removeChild(*static_cast<T*>(this)); // Remueve el hijo del padre
-            _parent = nullptr; // Limpia la referencia al padre
-        }
-        else {
-            std::cerr << "Unparent called on a root object or with invalid _parent." << std::endl;
+        if (!isRoot() && _parent != nullptr) { 
+            _parent->removeChild(*static_cast<T*>(this)); 
+            _parent = nullptr; 
         }
     }
     auto& setParent(T& newParent) {

@@ -97,7 +97,6 @@ void BasicShapesManager::createFigure(int figureType, std::vector<GameObject>& g
 
 
         go->transform().translate(glm::vec3(localPosition));
-        go->setName("GameObject (" + std::to_string(gameObjects.size()+32) + ")");
     }
     else {
 
@@ -105,7 +104,6 @@ void BasicShapesManager::createFigure(int figureType, std::vector<GameObject>& g
         go = &gameObjects.back();
         go->transform().translate(vec3(mousePosition));
         
-        go->setName("GameObject (" + std::to_string(gameObjects.size()) + ")");
     }
 
 
@@ -124,5 +122,5 @@ void BasicShapesManager::createFigure(int figureType, std::vector<GameObject>& g
         return;
     }
 
-    
+    go->setName("GameObject (" + std::to_string(gameObjects.size()) + ")");
 }

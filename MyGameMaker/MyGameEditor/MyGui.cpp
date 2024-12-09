@@ -307,15 +307,17 @@ void MyGUI::ShowHierarchy() {
                     SceneManager::gameObjectsOnScene;
                     GameObject* droppedObject = *(GameObject**)payload->Data;
                     if (droppedObject && droppedObject != &go) {
-                        
+
+                        auto s = droppedObject->parent()->getName();
+						std::cout << s << std::endl;
                             // Quitar al objeto de su padre anterior
-                           /* if (!droppedObject->isRoot()) {
-                                droppedObject->unparent();
-                            }*/
+                            if (!droppedObject->isRoot()) {
+                                droppedObject->setParent(go);
+                            }
 
                             // Agregar como hijo del nuevo padre
-                            go.emplaceChild(std::move(*droppedObject));
-                        go.emplaceChild(std::move(*droppedObject));
+                        //go.emplaceChild(std::move(*droppedObject));
+                        //go.emplaceChild(std::move(*droppedObject));
                         droppedObject->setTransform(go.worldTransform() * droppedObject->localTransform());
                         
                        

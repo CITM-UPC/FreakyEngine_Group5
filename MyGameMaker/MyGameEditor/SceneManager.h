@@ -11,6 +11,7 @@ public:
 	static void spawnBakerHouse();
 	static GameObject* getGameObject(int index);
 	static void RemoveGameObject(GameObject* gameObject);
+	
     //File drop handler
 
 public: 
