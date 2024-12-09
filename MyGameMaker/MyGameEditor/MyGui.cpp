@@ -28,6 +28,8 @@ bool show_hardware_window = false;
 bool show_software_window = false;
 
 bool show_spawn_figures_window = false;
+static glm::vec3 accumulatedRotation = glm::vec3(0.0f); // Rotaciones iniciales (acumuladas)
+
 
 MyGUI::MyGUI(SDL_Window* window, void* context) {
     IMGUI_CHECKVERSION();
@@ -279,13 +281,72 @@ void MyGUI::renderInspector() {
 
     if (persistentSelectedObject) {
         if (ImGui::CollapsingHeader("Transform")) {
-            glm::vec3 position = persistentSelectedObject->transform().pos();
-			glm::vec3 rotation = glm::vec3(persistentSelectedObject->transform().extractEulerAngles(persistentSelectedObject->transform().mat()));
-			glm::vec3 scale = persistentSelectedObject->transform().extractScale(persistentSelectedObject->transform().mat());
+            glm::vec3 position = persistentSelectedObject->GetComponent<TransformComponent>()->transform().pos();
+            glm::vec3 rotation = persistentSelectedObject->GetComponent<TransformComponent>()->transform().GetRotation();
+			glm::vec3 scale = persistentSelectedObject->GetComponent<TransformComponent>()->transform().extractScale(persistentSelectedObject->GetComponent<TransformComponent>()->transform().mat());
 
-            ImGui::Text("Position: (%.2f, %.2f, %.2f)", position.x, position.y, position.z);
-            ImGui::Text("Rotation: (%.2f, %.2f, %.2f)", rotation.x, rotation.y, rotation.z);
-            ImGui::Text("Scale: (%.2f, %.2f, %.2f)", scale.x, scale.y, scale.z);
+            // Controles para la posición
+            ImGui::Text("Position:");
+            ImGui::PushItemWidth(100);
+            if (ImGui::DragFloat("X##pos", &position.x, 0.1f)) {
+                persistentSelectedObject->GetComponent<TransformComponent>()->transform().setPos(position.x,position.y,position.z);
+            }
+            ImGui::NewLine();
+            if (ImGui::DragFloat("Y##pos", &position.y, 0.1f)) {
+                persistentSelectedObject->GetComponent<TransformComponent>()->transform().setPos(position.x, position.y, position.z);
+            }
+            ImGui::NewLine();
+            if (ImGui::DragFloat("Z##pos", &position.z, 0.1f)) {
+                persistentSelectedObject->GetComponent<TransformComponent>()->transform().setPos(position.x, position.y, position.z);
+            }
+            ImGui::PopItemWidth();
+
+
+            // Controles para la rotación
+            ImGui::Text("Rotation:");
+            ImGui::PushItemWidth(100);
+
+            //  X Rotation
+            float deltaX = 0.0f;
+            if (ImGui::DragFloat("X##rot", &accumulatedRotation.x, 0.1f, -360.0f, 360.0f, "%.3f")) {
+                deltaX = accumulatedRotation.x - persistentSelectedObject->transform().GetRotation().x; 
+                if (deltaX != 0.0f) {
+                    persistentSelectedObject->transform().rotate(glm::radians(deltaX), glm::vec3(1.0f, 0.0f, 0.0f)); 
+                }
+            }
+            //  Y Rotation
+            float deltaY = 0.0f;
+            if (ImGui::DragFloat("Y##rot", &accumulatedRotation.y, 0.1f, -360.0f, 360.0f, "%.3f")) {
+                deltaY = accumulatedRotation.y - persistentSelectedObject->transform().GetRotation().y;
+                if (deltaY != 0.0f) {
+                    persistentSelectedObject->transform().rotate(glm::radians(deltaY), glm::vec3(0.0f, 1.0f, 0.0f)); 
+                }
+            }
+            //  Z Rotation
+            float deltaZ = 0.0f;
+            if (ImGui::DragFloat("Z##rot", &accumulatedRotation.z, 0.1f, -360.0f, 360.0f, "%.3f")) {
+                deltaZ = accumulatedRotation.z - persistentSelectedObject->transform().GetRotation().z;
+                if (deltaZ != 0.0f) {
+                    persistentSelectedObject->transform().rotate(glm::radians(deltaZ), glm::vec3(0.0f, 0.0f, 1.0f)); 
+                }
+            }
+
+            ImGui::PopItemWidth();
+
+
+            // Controles para la escala
+            ImGui::Text("Scale:");
+            ImGui::PushItemWidth(100);
+            if (ImGui::DragFloat("X##scale", &scale.x, 0.1f, 0.01f, 100.0f)) {
+                persistentSelectedObject->transform().setScale(scale);
+            }
+            if (ImGui::DragFloat("Y##scale", &scale.y, 0.1f, 0.01f, 100.0f)) {
+                persistentSelectedObject->transform().setScale(scale);
+            }
+            if (ImGui::DragFloat("Z##scale", &scale.z, 0.1f, 0.01f, 100.0f)) {
+                persistentSelectedObject->transform().setScale(scale);
+            }
+            ImGui::PopItemWidth();
         }
 
         if (persistentSelectedObject->hasMesh() && ImGui::CollapsingHeader("Mesh")) {

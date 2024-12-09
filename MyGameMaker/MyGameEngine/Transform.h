@@ -34,14 +34,19 @@ public:
     Transform(const mat4& mat) : _mat(mat) {}
 
     
-   
-
+    void setScale(const glm::vec3& scale);
+    const vec3& GetRotation() const;
     void translate(const vec3& v);
+	void setPos(float x, float y, float z);
+    double getYaw() const;
+    double getPitch() const;
+    double getRoll() const;
+    void setRotation(float newPitch, float newYaw, float newRoll);
     void rotateYaw(double radians);
     void rotatePitch(double radians);
     void rotateRoll(double radians);
     void rotate(double rads, const vec3& v);
-    void updateRotationMatrix();
+    void rotateWithVector(const vec3& v);
     void lookAt(const vec3& target);
     void alignCamera(const vec3& worldUp = vec3(0.0f, 1.0f, 0.0f));
 	glm::vec3 extractEulerAngles(const glm::mat4& mat);
