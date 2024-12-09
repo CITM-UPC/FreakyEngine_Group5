@@ -14,14 +14,7 @@ void deleteCheckerTexture() {
 		checker_texture_id = 0;
     }
 }
-GameObject::GameObject(const std::string& name) : name(name), cachedComponentType(typeid(Component))
-{
-    AddComponent<TransformComponent>();
-    if (name == "Main Camera")
-    {
-        AddComponent<CameraComponent>();
-    }
-}
+
 // Crea la textura de tablero y devuelve el ID de la textura
 void CheckerTexture(bool hasCreatedCheckerImage) {
     
@@ -66,13 +59,10 @@ static void drawBoundingBox(const BoundingBox& bbox) {
 }
 
 
-std::string GameObject::GetName() const
-{
-    return name;
-}
+
 void GameObject::draw() const {
     glPushMatrix();
-    glMultMatrixd(GetComponent<TransformComponent>()->transform().data());
+    glMultMatrixd(_transform.data());
     glColor3ubv(&_color.r);
 
     if (hasTexture()) {

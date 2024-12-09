@@ -8,70 +8,44 @@ void Transform::translate(const vec3& v) {
     _mat = glm::translate(_mat, v);
 }
 
-const vec3& Transform::GetRotation() const
-{
-    // Calculate the rotation matrix from the _left, _up, and _fwd vectors
-    mat4 rotationMatrix = mat4(1.0);
-    rotationMatrix[0] = vec4(_left, 0.0);
-    rotationMatrix[1] = vec4(_up, 0.0);
-    rotationMatrix[2] = vec4(_fwd, 0.0);
-
-    // Extract Euler angles from the rotation matrix
-    vec3 eulerAngles = glm::eulerAngles(glm::quat_cast(rotationMatrix));
-
-    // Convert radians to degrees
-    eulerAngles = glm::degrees(eulerAngles);
-
-    return eulerAngles;
-}
-void Transform::setScale(const glm::vec3& scale) {
-    glm::vec3 currentScale = extractScale(_mat);
-    glm::vec3 newScale = scale;
-    _mat[0] = glm::vec4(newScale.x, _mat[0][1], _mat[0][2], _mat[0][3]); // Scale x
-    _mat[1] = glm::vec4(_mat[1][0], newScale.y, _mat[1][2], _mat[1][3]); // Scale y
-    _mat[2] = glm::vec4(_mat[2][0], _mat[2][1], newScale.z, _mat[2][3]); // Scale z
-}
-void Transform::setPos(float x, float y, float z) {
-    // Actualiza la posición del transform
-    _pos = glm::vec3(x, y, z);
-
-    // Recalcula la matriz de transformación usando la nueva posición
-    //updateRotationMatrix();
+void Transform::rotateYaw(double radians) {
+    yaw += radians; 
+    updateRotationMatrix(); 
 }
 
-void Transform::setRotation(float newPitch, float newYaw, float newRoll) {
-   /* pitch = newPitch;
-    yaw = newYaw;
-    roll = newRoll;*/
-    rotateWithVector( glm::vec3 (newPitch,newYaw,newRoll));
+void Transform::rotatePitch(double radians) {
+    pitch += radians; 
+    updateRotationMatrix(); 
 }
 
+void Transform::rotateRoll(double radians) {
+    roll += radians;
+    updateRotationMatrix(); 
+}
 void Transform::rotate(double rads, const vec3& v) {
     _mat = glm::rotate(_mat, rads, v);
 }
-void Transform::rotateWithVector(const vec3& inputVector) {
-    // Calcula el ángulo como la magnitud del vector
-    double angle = glm::length(inputVector);
+void Transform::updateRotationMatrix() {
+    float cosYaw = cos(yaw);
+    float sinYaw = sin(yaw);
+    float cosPitch = cos(pitch);
+    float sinPitch = sin(pitch);
 
-    // Si el ángulo es prácticamente cero, no hay rotación
-    if (angle == 0.0f) return;
+    mat4 yawMatrix = {
+        cosYaw, 0, sinYaw, 0,
+        0, 1, 0, 0,
+        -sinYaw, 0, cosYaw, 0,
+        0, 0, 0, 1
+    };
 
-    // Normaliza el vector para obtener el eje de rotación
-    vec3 axis = glm::normalize(inputVector);
+    mat4 pitchMatrix = {
+        1, 0, 0, 0,
+        0, cosPitch, -sinPitch, 0,
+        0, sinPitch, cosPitch, 0,
+        0, 0, 0, 1
+    };
 
-    // Aplica la rotación a la matriz actual
-    _mat = glm::rotate(_mat, angle, axis);
-}
-double Transform::getYaw() const {
-    return yaw;
-}
-
-double Transform::getPitch() const {
-    return pitch;
-}
-
-double Transform::getRoll() const {
-    return roll;
+    _mat = pitchMatrix * yawMatrix * _mat; 
 }
 void Transform::alignCamera(const vec3& worldUp) {
 
