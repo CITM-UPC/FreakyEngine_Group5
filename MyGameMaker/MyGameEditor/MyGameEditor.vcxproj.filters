@@ -39,6 +39,9 @@
     <ClCompile Include="FileDropHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ModelImporter.cpp">
+      <Filter>Source Files\Resource Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyWindow.h">
@@ -60,6 +63,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FileDropHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelImporter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

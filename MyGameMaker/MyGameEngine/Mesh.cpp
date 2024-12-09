@@ -2,6 +2,10 @@
 
 #include <GL/glew.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <fstream>
+#include <iostream>
+#include <vector>
+#include <glm/glm.hpp>
 using namespace std;
 
 #define CHECKERS_HEIGHT 32
@@ -216,4 +220,119 @@ void Mesh::drawNormalsPerFace(const glm::mat4& modelMatrix) {
 	}
 
 	glEnd();
+}
+bool Mesh::LoadCustomFile(const std::string& filePath)
+{
+	// Abrimos el archivo binario para lectura
+	std::ifstream file(filePath, std::ios::binary);
+	if (!file.is_open()) {
+		std::cerr << "Failed to open file: " << filePath << std::endl;
+		return false;
+	}
+
+	// Leer número de vértices
+	uint32_t numVertices;
+	file.read(reinterpret_cast<char*>(&numVertices), sizeof(uint32_t));
+	if (!file.good()) {
+		std::cerr << "Failed to read number of vertices." << std::endl;
+		return false;
+	}
+
+	// Leer vértices
+	std::vector<glm::vec3> vertices(numVertices);
+	file.read(reinterpret_cast<char*>(vertices.data()), numVertices * sizeof(glm::vec3));
+	if (!file.good()) {
+		std::cerr << "Failed to read vertex data." << std::endl;
+		return false;
+	}
+
+	// Leer normales (si están presentes)
+	std::vector<glm::vec3> normals;
+	uint32_t numNormals;
+	file.read(reinterpret_cast<char*>(&numNormals), sizeof(uint32_t));
+	if (!file.good()) {
+		std::cerr << "Failed to read number of normals." << std::endl;
+		return false;
+	}
+	if (numNormals > 0) {
+		normals.resize(numNormals);
+		file.read(reinterpret_cast<char*>(normals.data()), numNormals * sizeof(glm::vec3));
+		if (!file.good()) {
+			std::cerr << "Failed to read normal data." << std::endl;
+			return false;
+		}
+	}
+
+	// Leer coordenadas de textura (si están presentes)
+	std::vector<glm::vec2> texCoords;
+	uint32_t numTexCoords;
+	file.read(reinterpret_cast<char*>(&numTexCoords), sizeof(uint32_t));
+	if (!file.good()) {
+		std::cerr << "Failed to read number of texture coordinates." << std::endl;
+		return false;
+	}
+	if (numTexCoords > 0) {
+		texCoords.resize(numTexCoords);
+		file.read(reinterpret_cast<char*>(texCoords.data()), numTexCoords * sizeof(glm::vec2));
+		if (!file.good()) {
+			std::cerr << "Failed to read texture coordinate data." << std::endl;
+			return false;
+		}
+	}
+
+	// Leer colores (si están presentes)
+	std::vector<glm::u8vec3> colors;
+	uint32_t numColors;
+	file.read(reinterpret_cast<char*>(&numColors), sizeof(uint32_t));
+	if (!file.good()) {
+		std::cerr << "Failed to read number of colors." << std::endl;
+		return false;
+	}
+	if (numColors > 0) {
+		colors.resize(numColors);
+		file.read(reinterpret_cast<char*>(colors.data()), numColors * sizeof(glm::u8vec3));
+		if (!file.good()) {
+			std::cerr << "Failed to read color data." << std::endl;
+			return false;
+		}
+	}
+
+	// Leer índices
+	uint32_t numIndices;
+	file.read(reinterpret_cast<char*>(&numIndices), sizeof(uint32_t));
+	if (!file.good()) {
+		std::cerr << "Failed to read number of indices." << std::endl;
+		return false;
+	}
+
+	std::vector<uint32_t> indices(numIndices);
+	file.read(reinterpret_cast<char*>(indices.data()), numIndices * sizeof(uint32_t));
+	if (!file.good()) {
+		std::cerr << "Failed to read index data." << std::endl;
+		return false;
+	}
+
+	// Cerrar el archivo
+	file.close();
+
+	// Cargar los datos en el mesh
+	load(vertices.data(), vertices.size(), indices.data(), indices.size());
+
+	// Cargar coordenadas de textura si existen
+	if (!texCoords.empty()) {
+		loadTexCoords(texCoords.data(), texCoords.size());
+	}
+
+	// Cargar normales si existen
+	if (!normals.empty()) {
+		loadNormals(normals.data(), normals.size());
+	}
+
+	// Cargar colores si existen
+	if (!colors.empty()) {
+		loadColors(colors.data(), colors.size());
+	}
+
+	std::cout << "Custom model loaded successfully: " << filePath << std::endl;
+	return true; // Retorna true si todo salió bien
 }

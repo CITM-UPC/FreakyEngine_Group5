@@ -1,4 +1,4 @@
-// FileDropHandler.cpp
+
 #include "FileDropHandler.h"
 
 
@@ -15,8 +15,12 @@ void FileDropHandler::handleFileDrop(const std::string& filePath, const glm::mat
     auto imageTexture = std::make_shared<Image>();
     int mouseX, mouseY;
     SDL_GetMouseState(&mouseX, &mouseY);
-
+    LoadCustomFile(filePath.c_str());
     if (extension == "obj" || extension == "fbx" || extension == "dae") {
+        auto mesh = std::make_shared<Mesh>();
+        mesh = modelImporter.ImportModel(filePath.c_str());
+        modelImporter.SaveMeshToFile(mesh, "Library/CustomFreaks/StandardFreak" + std::to_string(freakCounter) + ".freak");
+        freakCounter++;
         SceneManager::LoadGameObject(filePath);
         SceneManager::getGameObject(SceneManager::gameObjectsOnScene.size() - 1)->transform().pos() = screenToWorld(glm::vec2(mouseX, mouseY), 10.0f, projection, view);
         SceneManager::selectedObject = &SceneManager::gameObjectsOnScene.back();
@@ -37,7 +41,44 @@ void FileDropHandler::handleFileDrop(const std::string& filePath, const glm::mat
         Console::Instance().Log("Unsupported file extension: " + extension);
     }
 }
+std::string FileDropHandler::findAvailableName(const std::string& baseName) {
+    int counter = 1;
+    std::string newName = baseName;
+    while (isObjectWithNameExists(newName)) {
+        newName = baseName + std::to_string(counter);
+        counter++;
+    }
+    return newName;
+}
 
+bool FileDropHandler::isObjectWithNameExists(const std::string& name) {
+    for (const auto& gameObject : SceneManager::gameObjectsOnScene) {
+        if (gameObject.getName() == name) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void FileDropHandler::LoadCustomFile(const char* path)
+{
+    // Load file
+	findAvailableName(path);
+    std::string extension = getFileExtension(path);
+
+    if (extension == "freak") {
+        
+        auto mesh = std::make_shared<Mesh>();
+		GameObject go;
+        mesh = modelImporter.LoadModelFromFile(path);
+        go.modelPath = path;
+        go.setMesh(mesh);
+        SceneManager::gameObjectsOnScene.push_back(go);
+		int newID = SceneManager::gameObjectsOnScene[SceneManager::gameObjectsOnScene.size() - 1].id;
+        go.id = newID + 1;
+    }
+    
+}
 std::string FileDropHandler::getFileExtension(const std::string& filePath) {
     size_t dotPos = filePath.find_last_of('.');
     if (dotPos == std::string::npos) return "";
@@ -54,4 +95,18 @@ GameObject* FileDropHandler::raycastFromMouseToGameObject(int mouseX, int mouseY
     // Implement the raycast logic here
     // This is a placeholder implementation
     return nullptr;
+}
+
+void FileDropHandler::LoadTexture(const std::string& path, GameObject& go) {
+    auto imageTexture = std::make_shared<Image>();
+
+    if (imageTexture->loadTexture(path), imageTexture->width() > 0) {
+        go.setTextureImage(imageTexture);
+        std::cout << "Texture loaded and applied to GameObject: " << go.getName() << std::endl;
+        Console::Instance().Log("Texture loaded and applied to GameObject: " + go.getName());
+    }
+    else {
+        std::cout << "Failed to load texture from path: " << path << std::endl;
+        Console::Instance().Log("Failed to load texture from path: " + path);
+    }
 }

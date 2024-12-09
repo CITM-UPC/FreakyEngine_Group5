@@ -24,7 +24,7 @@ public:
 		return _children.back();
 	}
 
-	void removeChild(const T& child) { return _children.remove((child)); }
+	void removeChild(const T& child) {  _children.remove((child)); }
 
     void unparent() {
         if (!isRoot() && _parent != nullptr) {

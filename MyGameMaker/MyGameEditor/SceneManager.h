@@ -10,6 +10,7 @@ public:
 	static void LoadGameObject(const std::string& filePath);
 	static void spawnBakerHouse();
 	static GameObject* getGameObject(int index);
+
     //File drop handler
 
 public: 

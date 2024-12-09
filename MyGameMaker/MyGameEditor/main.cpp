@@ -41,7 +41,7 @@ GameObject testCamera("Test Camera");
 SDL_Event event;
 bool rightMouseButtonDown = false;
 int lastMouseX, lastMouseY;
-
+FileDropHandler fileDropHandler;
 // Inicialización de OpenGL
 void initOpenGL() {
     glewInit();
@@ -404,7 +404,7 @@ static void idle_func() {
             std::cout << "No selected object or no objects in scene." << std::endl;
         }
     }
-
+   
     if (state[SDL_SCANCODE_LSHIFT] || state[SDL_SCANCODE_RSHIFT]) {
         move_speed = 0.2f;
     }
@@ -468,7 +468,7 @@ int main(int argc, char* argv[]) {
     MyGUI gui(window.windowPtr(), window.contextPtr());
     initOpenGL();
 
-    FileDropHandler fileDropHandler;
+   
 
     // Posición inicial de la cámara
     mainCamera.name = "Main Camera";

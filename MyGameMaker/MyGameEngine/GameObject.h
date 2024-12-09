@@ -34,13 +34,14 @@ private:
     std::string tag = "Untagged";
     bool active = true;
     bool destroyed = false;
-
+   
     std::unordered_map<std::type_index, std::shared_ptr<Component>> components;
 
     mutable std::type_index cachedComponentType;
     mutable std::shared_ptr<Component> cachedComponent;
 public:
-
+    int id = 0;
+    std::string modelPath;
 
     bool operator==(const GameObject& other) const {
         // Comparar los objetos por el nombre, o cualquier criterio único
