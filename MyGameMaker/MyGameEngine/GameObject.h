@@ -40,6 +40,16 @@ private:
     mutable std::type_index cachedComponentType;
     mutable std::shared_ptr<Component> cachedComponent;
 public:
+
+
+    bool operator==(const GameObject& other) const {
+        // Comparar los objetos por el nombre, o cualquier criterio único
+        return this->name == other.name;
+    }
+    bool operator!=(const GameObject& other) const {
+        return !(*this == other);
+    }
+
     bool hasCheckerTexture = false;
     std::string name;
     // Constructor y destructor

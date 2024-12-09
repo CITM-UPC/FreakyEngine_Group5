@@ -24,5 +24,25 @@ public:
 		return _children.back();
 	}
 
-	void removeChild(const T& child) { return _children.remove(std::forward(child)); }
+	void removeChild(const T& child) { return _children.remove((child)); }
+
+    void unparent() {
+        if (!isRoot() && _parent != nullptr) {
+            _parent->removeChild(*static_cast<T*>(this));
+            _parent = nullptr;
+        }
+    }
+    auto& setParent(T& newParent) {
+        // Check if the object already has a parent
+        if (_parent) {
+            _parent->removeChild(*static_cast<T*>(this));
+        }
+
+        // Set the new parent
+        _parent = &newParent;
+
+        // Add the object to the new parent's children
+        newParent._children.push_back(std::move(*static_cast<T*>(this)));
+        return _parent;
+    }
 };
