@@ -36,3 +36,29 @@ void SceneManager::LoadGameObject(const std::string& filePath) {
 GameObject* SceneManager::getGameObject(int index) {
 	return &gameObjectsOnScene[index];
 }
+
+void SceneManager::DestroyGameObject(GameObject* go) {
+    auto it = std::find_if(gameObjectsOnScene.begin(), gameObjectsOnScene.end(),
+        [](const GameObject& obj) { return &obj == selectedObject; });
+
+    if (it != gameObjectsOnScene.end()) 
+    {
+        gameObjectsOnScene.erase(it);
+        selectedObject = nullptr;
+        Console::Instance().Log("Object deleted");
+	}
+	else if (go->parent().children().size() > 0)
+    {
+        GameObject* parent = &go->parent();
+        parent->removeChild(*go);
+        selectedObject = nullptr;
+        Console::Instance().Log("Child object deleted");
+	}
+	else
+	{
+		Console::Instance().Log("Object not found");
+	}
+
+        
+    
+}

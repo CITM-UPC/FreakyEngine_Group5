@@ -560,10 +560,16 @@ int main(int argc, char* argv[]) {
                     BasicShapesManager::createFigure(3, SceneManager::gameObjectsOnScene, 1.0, mouseWorldPos);
                     SceneManager::selectedObject = &SceneManager::gameObjectsOnScene.back();
                     break;
+                case SDLK_DELETE:
+                    if (SceneManager::selectedObject) {
+                        SceneManager::DestroyGameObject(SceneManager::selectedObject);
+                        SceneManager::selectedObject = nullptr;
+                    }
+                    break;
                 default:
                     break;
                 }
-                break;
+            break;
 			default:
 				cout << event.type << endl;
 				break;

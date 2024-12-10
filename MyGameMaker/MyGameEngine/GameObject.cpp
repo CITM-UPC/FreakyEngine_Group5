@@ -22,6 +22,12 @@ GameObject::GameObject(const std::string& name) : name(name), cachedComponentTyp
         AddComponent<CameraComponent>();
     }
 }
+GameObject::~GameObject() {
+    // Liberar hijos
+    /*for (auto& child : children()) {
+        delete& child;
+    }*/
+}
 // Crea la textura de tablero y devuelve el ID de la textura
 void CheckerTexture(bool hasCreatedCheckerImage) {
     
@@ -137,3 +143,4 @@ void GameObject::setParent(GameObject& newParent) {
 
     GetComponent<TransformComponent>()->transform() = newLocalTransform;
 }
+

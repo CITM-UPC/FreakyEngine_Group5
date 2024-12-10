@@ -55,7 +55,7 @@ public:
     std::string name;
     // Constructor y destructor
     GameObject(const std::string& name = "GameObject");
-    //~GameObject();
+    ~GameObject();
 
     template <typename T, typename... Args>
     std::shared_ptr<T> AddComponent(Args&&... args);
@@ -124,6 +124,7 @@ public:
 
 
     void setParent(GameObject& newParent);
+   
 
    
 };
