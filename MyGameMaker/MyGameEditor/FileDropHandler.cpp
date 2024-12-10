@@ -64,6 +64,31 @@ void FileDropHandler::handleFileDrop(const std::string& filePath, const glm::mat
           
         
     }
+    else if (extension == "scene") {
+
+        // Intentamos cargar la escena desde el archivo .scene
+        try {
+            // Cargar los objetos de la escena desde el archivo
+            auto loadedGameObjects = SceneImport::LoadSceneFromFile(filePath);
+
+            // Agregar los GameObjects cargados a la escena
+            for (const auto& gameObject : loadedGameObjects) {
+                SceneManager::gameObjectsOnScene.push_back(*gameObject);  // Asumimos que SceneManager maneja correctamente los punteros
+            }
+
+            // Si deseas, puedes también establecer el primer objeto cargado como el seleccionado
+            if (!loadedGameObjects.empty()) {
+                SceneManager::selectedObject = &SceneManager::gameObjectsOnScene.back();  // O el primer objeto, según el caso
+            }
+
+            Console::Instance().Log("Scene loaded successfully from " + filePath);
+        }
+        catch (const std::exception& ex) {
+            std::cerr << "Error loading scene: " << ex.what() << std::endl;
+            Console::Instance().Log("Failed to load scene: " + std::string(ex.what()));
+
+        }
+    }
     else {
         std::cout << "Unsupported file extension: " << extension << std::endl;
         Console::Instance().Log("Unsupported file extension: " + extension);

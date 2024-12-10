@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "MyGameEngine/GameObject.h"
+#include "SceneImport.h"
 class SceneManager
 {
 public:
@@ -11,6 +12,7 @@ public:
 	static void spawnBakerHouse();
 	static GameObject* getGameObject(int index);
 	static void DestroyGameObject(GameObject* go);
+	static void SaveScene(const std::string& filePath);
 
 public: 
 	static std::vector<GameObject> gameObjectsOnScene;

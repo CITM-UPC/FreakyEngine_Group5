@@ -50,7 +50,7 @@ public:
     void lookAt(const vec3& target);
     void alignCamera(const vec3& worldUp = vec3(0.0f, 1.0f, 0.0f));
 	glm::vec3 extractEulerAngles(const glm::mat4& mat);
-	glm::vec3 extractScale(const glm::mat4& mat);
+	glm::vec3 extractScale(const glm::mat4& mat) const;
 
     Transform operator*(const mat4& other) { return Transform(_mat * other); }
     Transform operator*(const Transform& other) { return Transform(_mat * other._mat); }

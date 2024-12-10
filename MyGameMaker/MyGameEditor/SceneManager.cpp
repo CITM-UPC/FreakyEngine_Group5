@@ -21,7 +21,19 @@ void SceneManager::spawnBakerHouse()
     SceneManager::gameObjectsOnScene.push_back(go);
 }
 
-
+void SceneManager::SaveScene(const std::string& filePath) {
+    try {
+        std::vector<std::shared_ptr<GameObject>> sceneObjects;
+        for (auto& obj : gameObjectsOnScene) {
+            sceneObjects.push_back(std::make_shared<GameObject>(obj));
+        }
+        SceneImport::SaveSceneToFile(sceneObjects, filePath);
+        Console::Instance().Log("Scene saved successfully to " + filePath);
+    }
+    catch (const std::exception& ex) {
+        Console::Instance().Log(std::string("Failed to save scene: ") + ex.what());
+    }
+}
 void SceneManager::LoadGameObject(const std::string& filePath) {
     auto mesh = std::make_shared<Mesh>();
 

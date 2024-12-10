@@ -110,7 +110,7 @@ glm::vec3 Transform::extractEulerAngles(const glm::mat4& mat) {
 
     return glm::vec3(glm::degrees(pitch), glm::degrees(yaw), glm::degrees(roll));
 }
-glm::vec3 Transform::extractScale(const glm::mat4& mat) {
+glm::vec3 Transform::extractScale(const glm::mat4& mat) const {
     glm::vec3 left(mat[0][0], mat[0][1], mat[0][2]);
     glm::vec3 up(mat[1][0], mat[1][1], mat[1][2]);
     glm::vec3 forward(mat[2][0], mat[2][1], mat[2][2]);
