@@ -122,6 +122,9 @@ public:
 
     void initializeCheckerTexture();
 
+
+    void setParent(GameObject& newParent);
+
    
 };
 template <typename T, typename... Args>

@@ -54,5 +54,8 @@ public:
 
     Transform operator*(const mat4& other) { return Transform(_mat * other); }
     Transform operator*(const Transform& other) { return Transform(_mat * other._mat); }
+
+    const glm::mat4& getMatrix() const;
+
 };
 

@@ -121,3 +121,7 @@ glm::vec3 Transform::extractScale(const glm::mat4& mat) {
 
     return glm::vec3(scaleX, scaleY, scaleZ);
 }
+
+const glm::mat4& Transform::getMatrix() const {
+    return _mat;
+}

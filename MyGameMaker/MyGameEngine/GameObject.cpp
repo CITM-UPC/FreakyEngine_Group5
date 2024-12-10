@@ -96,10 +96,10 @@ void GameObject::draw() const {
 
     if (hasTexture()) glDisable(GL_TEXTURE_2D);
 
-    // Dibuja a los hijos recursivamente desde aquí
+   
     for (const auto& child : children()) {
-        child.draw(); // Cada hijo se dibuja relativo a su padre
-        drawBoundingBox(child.boundingBox()); // También dibujamos sus bounding boxes
+        child.draw(); 
+        drawBoundingBox(child.boundingBox()); 
     }
 
     glPopMatrix();
@@ -117,4 +117,23 @@ BoundingBox GameObject::worldBoundingBox() const {
     BoundingBox bbox = worldTransform().mat() * (_mesh_ptr ? _mesh_ptr->boundingBox() : BoundingBox());
     for (const auto& child : children()) bbox = bbox + child.worldBoundingBox();
     return bbox;
+}
+void GameObject::setParent(GameObject& newParent) {
+
+    Transform globalTransform = this->worldTransform();
+
+    if (!isRoot()) {
+        auto& currentParent = parent();
+        currentParent.removeChild(*this);
+    }
+    newParent.emplaceChild(*this);
+
+    Transform parentGlobalTransform = newParent.worldTransform();
+    glm::mat4 parentMatrix = parentGlobalTransform.mat();         
+    glm::mat4 globalMatrix = globalTransform.mat();            
+
+    glm::mat4 newLocalMatrix = glm::inverse(parentMatrix) * globalMatrix;
+    Transform newLocalTransform(newLocalMatrix);
+
+    GetComponent<TransformComponent>()->transform() = newLocalTransform;
 }

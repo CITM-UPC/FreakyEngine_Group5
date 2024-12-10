@@ -455,22 +455,22 @@ void MyGUI::ShowHierarchy() {
                     SceneManager::gameObjectsOnScene;
                     GameObject* droppedObject = *(GameObject**)payload->Data;
                     if (droppedObject && droppedObject != &go) {
+                        // Si el objeto reparenteado era raíz, ya no será raíz
 
-                        /*auto s = droppedObject->parent()->getName();
-                        std::cout << s << std::endl;*/
-                        // Quitar al objeto de su padre anterior
-                        if (!droppedObject->isRoot()) {
+                        // Reparentar el objeto
+                        if (droppedObject->isRoot()) {
+                            droppedObject->setParent(go);
+                            auto& sceneObjects = SceneManager::gameObjectsOnScene;
+                            /*sceneObjects.erase(
+                                std::remove_if(sceneObjects.begin(), sceneObjects.end(),
+                                    [droppedObject](const GameObject& obj) { return &obj == droppedObject; }),
+                                sceneObjects.end());*/
+							SceneManager::selectedObject = droppedObject;
+                        }
+                        else {
+                            //droppedObject->parent().removeChild(*droppedObject);
                             droppedObject->setParent(go);
                         }
-
-                        // Agregar como hijo del nuevo padre
-                    //go.emplaceChild(std::move(*droppedObject));
-                    //go.emplaceChild(std::move(*droppedObject));
-                        //droppedObject->setTransform(go.worldTransform() * droppedObject->localTransform());
-
-
-
-
                     }
                 }
                 ImGui::EndDragDropTarget();
@@ -482,7 +482,7 @@ void MyGUI::ShowHierarchy() {
                 }
                 ImGui::TreePop();
             }
-            };
+        };
 
         for (auto& go : SceneManager::gameObjectsOnScene) {
             if (go.isRoot()) {
@@ -492,7 +492,6 @@ void MyGUI::ShowHierarchy() {
         ImGui::End();
     }
 }
-//ALGO FALLA , HAY QUE REVISARLO
 void MyGUI::renderInspector() {
     ImGui::SetNextWindowSize(ImVec2(300, 700), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(980, 20), ImGuiCond_Always);

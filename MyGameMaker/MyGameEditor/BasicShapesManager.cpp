@@ -88,35 +88,52 @@ void BasicShapesManager::createFigure(int figureType, std::vector<GameObject>& g
     GameObject* go = nullptr;
 
     if (parent) {
-        // Crear un hijo del objeto seleccionado
-        
-        go = &parent->emplaceChild();
-        go->worldTransform();
+        go = new GameObject();
+        // Configurar la malla según el tipo de figura
+        switch (figureType) {
+        case 1:  // Triángulo
+            go->setMesh(MakeTriangleMesh(size));
+            break;
+        case 2:  // Cuadrado
+            go->setMesh(MakeQuadMesh(size));
+            break;
+        case 3:  // Cubo
+            go->setMesh(MakeCubeMesh(size));
+            break;
+        default:
+            std::cout << "Figure type not recognized." << std::endl;
+            return;
+        }
+
+        // Configurar posición inicial y nombre
+        go->transform().translate(vec3(mousePosition));
+        go->setName("GameObject (" + std::to_string(gameObjects.size()) + ")");
+        go->setParent(*parent);
     }
     else {
         // Crear un nuevo objeto raíz
         gameObjects.emplace_back(); // Agregar al vector
         go = &gameObjects.back();
-        
+        // Configurar la malla según el tipo de figura
+        switch (figureType) {
+        case 1:  // Triángulo
+            go->setMesh(MakeTriangleMesh(size));
+            break;
+        case 2:  // Cuadrado
+            go->setMesh(MakeQuadMesh(size));
+            break;
+        case 3:  // Cubo
+            go->setMesh(MakeCubeMesh(size));
+            break;
+        default:
+            std::cout << "Figure type not recognized." << std::endl;
+            return;
+        }
+
+        // Configurar posición inicial y nombre
+        go->transform().translate(vec3(mousePosition));
+        go->setName("GameObject (" + std::to_string(gameObjects.size()) + ")");
     }
 
-    // Configurar la malla según el tipo de figura
-    switch (figureType) {
-    case 1:  // Triángulo
-        go->setMesh(MakeTriangleMesh(size));
-        break;
-    case 2:  // Cuadrado
-        go->setMesh(MakeQuadMesh(size));
-        break;
-    case 3:  // Cubo
-        go->setMesh(MakeCubeMesh(size));
-        break;
-    default:
-        std::cout << "Figure type not recognized." << std::endl;
-        return;
-    }
-
-    // Configurar posición inicial y nombre
-    go->transform().translate(vec3(mousePosition));
-    go->setName("GameObject (" + std::to_string(gameObjects.size()) + ")");
+    
 }
