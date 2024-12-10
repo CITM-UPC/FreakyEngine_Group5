@@ -1,21 +1,49 @@
-5
-Main Camera
-0 0 0
-0 -0 0
-1 1 1
-Test Camera
-0 0 0
-0 -0 0
-1 1 1
-GameObject (2)
-4 0 0
-0 -0 0
-1 1 1
-GameObject (4)
-3.12034 0.847875 6.03779
-0 -0 0
-1 1 1
-GameObject (5)
-3.17355 -0.0597987 9.04984
-0 -0 0
-1 1 1
+{
+"GameObjects": [
+  {
+    "UID": 0,
+    "Name": "Main Camera",
+    "Transform": {
+      "Position": [0, 0, 0],
+      "Scale": [1, 1, 1],
+      "Rotation": [-0, 0, 0]
+    }
+  },
+  {
+    "UID": 0,
+    "Name": "Test Camera",
+    "Transform": {
+      "Position": [0, 0, 0],
+      "Scale": [1, 1, 1],
+      "Rotation": [-0, 0, 0]
+    }
+  },
+  {
+    "UID": 0,
+    "Name": "GameObject (2)",
+    "Transform": {
+      "Position": [4, 0, 0],
+      "Scale": [1, 1, 1],
+      "Rotation": [15.8, 0, 0]
+    }
+  },
+  {
+    "UID": -842150451,
+    "Name": "GameObject (4)",
+    "Transform": {
+      "Position": [1.40191, -0.0700495, 5.53905],
+      "Scale": [1, 1, 1],
+      "Rotation": [-0, 0, 0]
+    }
+  },
+  {
+    "UID": -842150451,
+    "Name": "GameObject (5)",
+    "Transform": {
+      "Position": [2.37342, 0.337448, 8.29482],
+      "Scale": [1, 1, 1],
+      "Rotation": [-0, 0, 0]
+    }
+  }
+]
+}

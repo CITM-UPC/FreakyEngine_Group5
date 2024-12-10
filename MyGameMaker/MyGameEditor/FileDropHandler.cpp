@@ -68,16 +68,11 @@ void FileDropHandler::handleFileDrop(const std::string& filePath, const glm::mat
 
         // Intentamos cargar la escena desde el archivo .scene
         try {
-            // Cargar los objetos de la escena desde el archivo
-            auto loadedGameObjects = SceneImport::LoadSceneFromFile(filePath);
+            // Llamar a la función correcta para cargar la escena
+            SceneManager::loadScene(filePath);
 
-            // Agregar los GameObjects cargados a la escena
-            for (const auto& gameObject : loadedGameObjects) {
-                SceneManager::gameObjectsOnScene.push_back(*gameObject);  // Asumimos que SceneManager maneja correctamente los punteros
-            }
-
-            // Si deseas, puedes también establecer el primer objeto cargado como el seleccionado
-            if (!loadedGameObjects.empty()) {
+            // Si se desea, se puede establecer el primer objeto cargado como el seleccionado
+            if (!SceneManager::gameObjectsOnScene.empty()) {
                 SceneManager::selectedObject = &SceneManager::gameObjectsOnScene.back();  // O el primer objeto, según el caso
             }
 
@@ -86,7 +81,6 @@ void FileDropHandler::handleFileDrop(const std::string& filePath, const glm::mat
         catch (const std::exception& ex) {
             std::cerr << "Error loading scene: " << ex.what() << std::endl;
             Console::Instance().Log("Failed to load scene: " + std::string(ex.what()));
-
         }
     }
     else {

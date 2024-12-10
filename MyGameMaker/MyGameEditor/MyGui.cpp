@@ -309,7 +309,7 @@ void MyGUI::ShowMainMenuBar() {
                     NULL
                 );
                 if (filePath) {
-                    SceneManager::SaveScene(filePath);
+                    SceneManager::saveScene(filePath);
                 }
             }
             if (ImGui::MenuItem("Quit")) {

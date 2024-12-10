@@ -12,7 +12,8 @@ public:
 	static void spawnBakerHouse();
 	static GameObject* getGameObject(int index);
 	static void DestroyGameObject(GameObject* go);
-	static void SaveScene(const std::string& filePath);
+	static void saveScene(const std::string& filePath);
+	static void loadScene(const std::string& filePath);
 
 public: 
 	static std::vector<GameObject> gameObjectsOnScene;

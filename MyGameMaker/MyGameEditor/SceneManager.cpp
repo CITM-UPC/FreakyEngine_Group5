@@ -3,6 +3,7 @@
 #include "MyGameEngine/Mesh.h"
 #include "MyGameEngine/Image.h"
 #include "Console.h"
+#include <sstream>
 
 std::vector<GameObject> SceneManager::gameObjectsOnScene;
 GameObject* SceneManager::selectedObject = nullptr;
@@ -21,19 +22,7 @@ void SceneManager::spawnBakerHouse()
     SceneManager::gameObjectsOnScene.push_back(go);
 }
 
-void SceneManager::SaveScene(const std::string& filePath) {
-    try {
-        std::vector<std::shared_ptr<GameObject>> sceneObjects;
-        for (auto& obj : gameObjectsOnScene) {
-            sceneObjects.push_back(std::make_shared<GameObject>(obj));
-        }
-        SceneImport::SaveSceneToFile(sceneObjects, filePath);
-        Console::Instance().Log("Scene saved successfully to " + filePath);
-    }
-    catch (const std::exception& ex) {
-        Console::Instance().Log(std::string("Failed to save scene: ") + ex.what());
-    }
-}
+
 void SceneManager::LoadGameObject(const std::string& filePath) {
     auto mesh = std::make_shared<Mesh>();
 
@@ -70,7 +59,82 @@ void SceneManager::DestroyGameObject(GameObject* go) {
 	{
 		Console::Instance().Log("Object not found");
 	}
-
-        
-    
+}
+void SceneManager::saveScene(const std::string& filePath) {
+    std::ofstream outFile(filePath, std::ios::out);
+    if (!outFile) {
+        Console::Instance().Log("Failed to open file for saving scene: " + filePath);
+        return;
+    }
+    outFile << "{\n\"GameObjects\": [\n";
+    for (size_t i = 0; i < SceneManager::gameObjectsOnScene.size(); ++i) {
+        const auto& go = SceneManager::gameObjectsOnScene[i]; // Direct access to GameObject
+        const auto& transform = go.GetComponent<TransformComponent>()->transform();
+        outFile << "  {\n";
+        outFile << "    \"UID\": " << go.getUUID() << ",\n";
+      //  outFile << "    \"ParentUID\": " << (go.GetParent() ? go.GetParent()->getUUID() : -1) << ",\n";
+        outFile << "    \"Name\": \"" << go.getName() << "\",\n";
+        outFile << "    \"Transform\": {\n";
+        outFile << "      \"Position\": [" << transform.pos().x << ", " << transform.pos().y << ", " << transform.pos().z << "],\n";
+        outFile << "      \"Scale\": [" << transform.extractScale(transform.mat()).x << ", " << transform.extractScale(transform.mat()).y << ", " << transform.extractScale(transform.mat()).z << "],\n";
+        outFile << "      \"Rotation\": [" << transform.extractEulerAngles(transform.mat()).x << ", " << transform.extractEulerAngles(transform.mat()).y << ", " << transform.extractEulerAngles(transform.mat()).z << "]\n";
+        outFile << "    }\n";
+        outFile << "  }";
+        if (i != SceneManager::gameObjectsOnScene.size() - 1) outFile << ",";
+        outFile << "\n";
+    }
+    outFile << "]\n}";
+    outFile.close();
+    Console::Instance().Log("Scene saved to " + filePath);
+}
+void SceneManager::loadScene(const std::string& filePath) {
+    std::ifstream inFile(filePath, std::ios::in);
+    if (!inFile) {
+        Console::Instance().Log("Failed to open file for loading scene: " + filePath);
+        return;
+    }
+    SceneManager::gameObjectsOnScene.clear(); // Clear current scene
+    std::string line;
+    GameObject* parent = nullptr;
+    while (std::getline(inFile, line)) {
+        if (line.find("\"UID\":") != std::string::npos) {
+            GameObject gameObject; // Create a new GameObject instance
+            gameObject.setUUID(std::stoi(line.substr(line.find(":") + 1)));
+            if (line.find("\"Name\":") != std::string::npos) {
+                std::string name = line.substr(line.find(":") + 2);
+                name.erase(name.find_last_of("\""));
+                gameObject.setName(name);
+            }
+            // Parse Transform
+            Transform transform;
+            while (std::getline(inFile, line) && line.find("}") == std::string::npos) {
+                if (line.find("\"Position\":") != std::string::npos) {
+                    std::istringstream iss(line.substr(line.find("[") + 1));
+                    glm::vec3 pos;
+                    char delim;
+                    iss >> pos.x >> delim >> pos.y >> delim >> pos.z;
+                    transform.translate(pos);
+                }
+                else if (line.find("\"Scale\":") != std::string::npos) {
+                    std::istringstream iss(line.substr(line.find("[") + 1));
+                    glm::vec3 scale;
+                    char delim;
+                    iss >> scale.x >> delim >> scale.y >> delim >> scale.z;
+                    transform.setScale(scale);
+                }
+                else if (line.find("\"Rotation\":") != std::string::npos) {
+                    std::istringstream iss(line.substr(line.find("[") + 1));
+                    glm::vec3 rotation;
+                    char delim;
+                    iss >> rotation.x >> delim >> rotation.y >> delim >> rotation.z;
+                    transform.setRotation(glm::radians(rotation.y), glm::radians(rotation.x), glm::radians(rotation.z));
+                }
+            }
+            gameObject.AddComponent<TransformComponent>()->transform() = transform;
+            // Add GameObject to the scene
+            SceneManager::gameObjectsOnScene.push_back(gameObject);
+        }
+    }
+    inFile.close();
+    Console::Instance().Log("Scene loaded from " + filePath);
 }

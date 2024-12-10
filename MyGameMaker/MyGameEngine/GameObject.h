@@ -30,7 +30,7 @@ private:
    
 	mutable bool hasCreatedCheckerTexture = false;		// Indica si la textura de cuadros ha sido creada
     // Restaura la textura original del objeto
-	
+    
     std::string tag = "Untagged";
     bool active = true;
     bool destroyed = false;
@@ -42,7 +42,9 @@ private:
 public:
     int id = 0;
     std::string modelPath;
-
+    int uuid;
+    void setUUID(int id) { uuid = id; }
+    int getUUID() const { return uuid; }
     bool operator==(const GameObject& other) const {
         // Comparar los objetos por el nombre, o cualquier criterio único
         return this->name == other.name;
