@@ -133,8 +133,19 @@ GameObject* raycastFromMouseToGameObject(int mouseX, int mouseY, const glm::mat4
     GameObject* hitObject = nullptr;
 
     for (auto& go : SceneManager::gameObjectsOnScene) {
-        if (intersectRayWithBoundingBox(rayOrigin, rayDirection, go.boundingBox())) {
+        // Transformar bounding box del padre al espacio global
+        BoundingBox globalBoundingBox = go.worldTransform().mat() * go.localBoundingBox();
+        if (intersectRayWithBoundingBox(rayOrigin, rayDirection, globalBoundingBox)) {
             hitObject = &go;
+
+            // Verificar los hijos en el espacio global
+            for (auto& child : go.children()) {
+                BoundingBox childGlobalBoundingBox = child.worldTransform().mat() * child.localBoundingBox();
+                if (intersectRayWithBoundingBox(rayOrigin, rayDirection, childGlobalBoundingBox)) {
+                    hitObject = &child;
+                    break;
+                }
+            }
             break;
         }
     }

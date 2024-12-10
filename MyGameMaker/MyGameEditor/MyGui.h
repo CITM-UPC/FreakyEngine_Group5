@@ -28,6 +28,7 @@ public:
 
 
 	void ShowSpawnFigures(bool* p_open);
+	void ShowSpawnEmptyGameObjects(bool* p_open);
 	void ShowMetricsWindow(bool* p_open);
 	void ShowRenderSystemInfo(bool* p_open);
 	void ShowLibraryVerions(bool* p_open);

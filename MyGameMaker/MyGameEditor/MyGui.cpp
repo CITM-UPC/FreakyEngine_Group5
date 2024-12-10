@@ -34,6 +34,9 @@ bool show_hardware_window = false;
 bool show_software_window = false;
 
 bool show_spawn_figures_window = false;
+
+bool show_spawn_empty_gameobjects_window = false;
+
 static glm::vec3 accumulatedRotation = glm::vec3(0.0f); // Rotaciones iniciales (acumuladas)
 
 
@@ -242,7 +245,6 @@ MyGUI::~MyGUI() {
 }
 
 void MyGUI::ShowMainMenuBar() {
-
     if (show_metrics_window) {
         ShowMetricsWindow(&show_metrics_window);
     }
@@ -254,6 +256,9 @@ void MyGUI::ShowMainMenuBar() {
     }
     if (show_spawn_figures_window) {
         ShowSpawnFigures(&show_spawn_figures_window);
+    }
+    if (show_spawn_empty_gameobjects_window) {
+        ShowSpawnEmptyGameObjects(&show_spawn_empty_gameobjects_window);
     }
 
     if (ImGui::BeginMainMenuBar())
@@ -282,15 +287,14 @@ void MyGUI::ShowMainMenuBar() {
             }
             if (ImGui::MenuItem("Quit"))
             {
-
                 SDL_Quit();
                 exit(0);
-
             }
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Mesh")) {
             ImGui::Checkbox("Mesh Creator", &show_spawn_figures_window);
+            ImGui::Checkbox("Spawn Empty GameObjects", &show_spawn_empty_gameobjects_window);
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Help"))
@@ -355,7 +359,15 @@ void MyGUI::ShowSpawnFigures(bool* p_open) {
     }
     ImGui::End();
 }
+void MyGUI::ShowSpawnEmptyGameObjects(bool* p_open) {
+    ImGui::Begin("Spawn Empty GameObjects");
 
+    if (ImGui::Button("Spawn Empty")) {
+        BasicShapesManager::createEmptyGameObject(SceneManager::gameObjectsOnScene, SceneManager::selectedObject);
+    }
+
+    ImGui::End();
+}
 float GetMemoryUsage() {
     PROCESS_MEMORY_COUNTERS memCounter;
     if (GetProcessMemoryInfo(GetCurrentProcess(), &memCounter, sizeof(memCounter))) {

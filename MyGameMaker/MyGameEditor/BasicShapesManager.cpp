@@ -137,3 +137,23 @@ void BasicShapesManager::createFigure(int figureType, std::vector<GameObject>& g
 
     
 }
+
+void BasicShapesManager::createEmptyGameObject(std::vector<GameObject>& gameObjects, GameObject* parent) {
+    GameObject* go = nullptr;
+
+    if (parent) {
+        // Crear un nuevo GameObject y asignarlo como hijo del objeto seleccionado
+        go = new GameObject();
+        go->setName("EmptyGameObject (" + std::to_string(gameObjects.size()) + ")");
+        go->setParent(*parent);
+    }
+    else {
+        // Crear un nuevo GameObject raíz
+        gameObjects.emplace_back(); // Agregar al vector de objetos en escena
+        go = &gameObjects.back();
+        go->setName("EmptyGameObject (" + std::to_string(gameObjects.size()) + ")");
+    }
+
+    // Selecciona el nuevo objeto creado
+    SceneManager::selectedObject = go;
+}
