@@ -7,7 +7,15 @@
 #include <IL/ilu.h>
 #include <glm/glm.hpp>
 
-
+static GLenum formatFromChannels(int channels) {
+	switch (channels) {
+	case 1: return GL_LUMINANCE;
+	case 2: return GL_LUMINANCE_ALPHA;
+	case 3: return GL_RGB;
+	case 4: return GL_RGBA;
+	default: return GL_RGB;
+	}
+}
 Image::~Image() {
 	if(_id) glDeleteTextures(1, &_id);
 }
@@ -24,15 +32,7 @@ void Image::bind() const {
 	glBindTexture(GL_TEXTURE_2D, _id);
 }
 
-static auto formatFromChannels(int channels) {
-	switch (channels) {
-		case 1: return GL_LUMINANCE;
-		case 2: return GL_LUMINANCE_ALPHA;
-		case 3: return GL_RGB;
-		case 4: return GL_RGBA;
-		default: return GL_RGB;
-	}
-}
+
 
 static int rowAlignment(int width, int channels) {
 	const size_t rowSizeInBytes = static_cast<size_t>(width) * channels;
@@ -51,7 +51,7 @@ void Image::load(int width, int height, int channels, void* data) {
 
 	bind();
 	glPixelStorei(GL_UNPACK_ALIGNMENT, rowAlignment(width, channels));
-	glTexImage2D(GL_TEXTURE_2D, 0, channels, width, height, 0, formatFromChannels(channels), GL_UNSIGNED_BYTE, data);
+	glTexImage2D(GL_TEXTURE_2D, 0, formatFromChannels(channels), width, height, 0, formatFromChannels(channels), GL_UNSIGNED_BYTE, data);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

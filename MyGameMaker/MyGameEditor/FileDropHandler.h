@@ -9,15 +9,18 @@
 #include "SceneManager.h"
 #include "Console.h"
 #include "ModelImporter.h"
+#include "TextureImporter.h"
 
 class FileDropHandler {
     ModelImporter modelImporter;
+    TextureImporter textureImporter;
 public:
     void handleFileDrop(const std::string& filePath, const glm::mat4& projection, const glm::mat4& view);
     void LoadTexture(const std::string& path, GameObject& go);
    // void LoadCustomFile(const std::string& path, GameObject& go);
     void LoadCustomFile(const char* path);
      int freakCounter = 0;
+	 int textureCounter = 0;
      std::string findAvailableName(const std::string& baseName);
      bool isObjectWithNameExists(const std::string& name);
 

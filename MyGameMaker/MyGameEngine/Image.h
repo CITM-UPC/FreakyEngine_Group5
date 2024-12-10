@@ -2,6 +2,8 @@
 
 #include <ostream>
 #include <istream>
+#include <string>
+#include <GL/glew.h>
 
 class Image {
 
@@ -26,6 +28,15 @@ public:
 	void bind() const;
 	void load(int width, int height, int channels, void* data);
 	void loadTexture(const std::string& path);
+	static GLenum formatFromChannels(int channels) {
+		switch (channels) {
+		case 1: return GL_LUMINANCE;
+		case 2: return GL_LUMINANCE_ALPHA;
+		case 3: return GL_RGB;
+		case 4: return GL_RGBA;
+		default: return GL_RGB;
+		}
+	}
 };
 
 std::ostream& operator<<(std::ostream& os, const Image& img);

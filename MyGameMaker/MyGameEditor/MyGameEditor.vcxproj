@@ -154,6 +154,7 @@
     <ClCompile Include="MyWindow.cpp" />
     <ClCompile Include="SceneManager.cpp" />
     <ClCompile Include="SystemInfo.cpp" />
+    <ClCompile Include="TextureImporter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BasicShapesManager.h" />
@@ -164,6 +165,7 @@
     <ClInclude Include="MyWindow.h" />
     <ClInclude Include="SceneManager.h" />
     <ClInclude Include="SystemInfo.h" />
+    <ClInclude Include="TextureImporter.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

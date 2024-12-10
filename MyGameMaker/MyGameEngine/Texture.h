@@ -3,6 +3,7 @@
 #include <memory>
 #include "Image.h"
 
+
 class Texture
 {
 public:
