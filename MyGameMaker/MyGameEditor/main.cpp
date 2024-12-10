@@ -561,7 +561,8 @@ int main(int argc, char* argv[]) {
                     SceneManager::selectedObject = &SceneManager::gameObjectsOnScene.back();
                     break;
                 case SDLK_DELETE:
-                    if (SceneManager::selectedObject) {
+                    if (SceneManager::selectedObject) 
+                    {
                         SceneManager::DestroyGameObject(SceneManager::selectedObject);
                         SceneManager::selectedObject = nullptr;
                     }
