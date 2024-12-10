@@ -42,6 +42,8 @@ public:
 
 	SDL_Texture* LoadTexture(const std::string& path); // Ensure this declaration matches the implementation
 
+	void HandleDroppedFile(const char* filePath);
+
 	void ShowContentBrowser();
 
 private:

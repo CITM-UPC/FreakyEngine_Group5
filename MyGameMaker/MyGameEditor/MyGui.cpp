@@ -27,6 +27,8 @@
 #include <string>
 #include <cstdlib>
 
+
+
 bool show_metrics_window = false;
 
 bool show_hardware_window = false;
@@ -133,21 +135,67 @@ void MyGUI::OnDropTarget() {
         ImGui::EndDragDropTarget();
     }
 }
-
 void MyGUI::ShowContentBrowser() {
     ImGui::Begin("Content Browser");
 
     // Navigate to the parent directory if not at the base directory
     if (m_CurrentDirectory != m_BaseDirectory) {
-        if (ImGui::Button("<-")) {
-            // Go to the parent directory
+        if (ImGui::Button("<-") && !ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
             size_t lastSlash = m_CurrentDirectory.find_last_of("\\/");
             if (lastSlash != std::string::npos) {
                 m_CurrentDirectory = m_CurrentDirectory.substr(0, lastSlash);
             }
         }
-    }
 
+        // Handle drag-and-drop for moving items to the parent directory
+        if (ImGui::BeginDragDropTarget()) {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
+                std::wstring droppedPath = (const wchar_t*)payload->Data;
+                std::string filePath(droppedPath.begin(), droppedPath.end());
+
+                size_t lastSlash = m_CurrentDirectory.find_last_of("\\/");
+                if (lastSlash != std::string::npos) {
+                    std::string parentDirectory = m_CurrentDirectory.substr(0, lastSlash);
+                    std::filesystem::path sourcePath(filePath);
+                    std::filesystem::path targetPath = std::filesystem::path(parentDirectory) / sourcePath.filename();
+
+                    try {
+                        std::filesystem::rename(sourcePath, targetPath);
+                    }
+                    catch (const std::exception& e) {
+                        std::cerr << "Failed to move file: " << e.what() << std::endl;
+                    }
+                }
+            }
+            ImGui::EndDragDropTarget();
+        }
+    }
+    // Import File Button
+    if (ImGui::Button("Import File")) {
+        // Open file dialog to select a file
+        const char* filters[] = { "*.*" };
+        const char* filePath = tinyfd_openFileDialog(
+            "Select a File to Import",
+            "",
+            1,
+            filters,
+            "All Files",
+            0
+        );
+
+        if (filePath) {
+            // Copy the selected file to the current content browser directory
+            std::filesystem::path sourcePath(filePath);
+            std::filesystem::path targetPath = std::filesystem::path(m_CurrentDirectory) / sourcePath.filename();
+
+            try {
+                std::filesystem::copy_file(sourcePath, targetPath, std::filesystem::copy_options::overwrite_existing);
+            }
+            catch (const std::exception& e) {
+                std::cerr << "Failed to copy file: " << e.what() << std::endl;
+            }
+        }
+    }
     static float padding = 16.0f;
     static float thumbnailSize = 128.0f;
     float cellSize = thumbnailSize + padding;
@@ -158,8 +206,8 @@ void MyGUI::ShowContentBrowser() {
 
     ImGui::Columns(columnCount, 0, false);
 
-    // Get contents of the current directory
     auto contents = GetDirectoryContents(m_CurrentDirectory);
+    std::vector<std::string> itemsToDelete;
 
     for (const auto& entry : contents) {
         std::string fullPath = m_CurrentDirectory + "\\" + entry;
@@ -167,21 +215,54 @@ void MyGUI::ShowContentBrowser() {
         ImGui::PushID(entry.c_str());
         bool isDirectory = (GetFileAttributesW(ConvertToWideString(fullPath).c_str()) & FILE_ATTRIBUTE_DIRECTORY) != 0;
 
-        // Choose the appropriate icon
-        SDL_Texture* icon = isDirectory ? m_DirectoryIcon : m_FileIcon;
+        if (isDirectory) {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.5f, 0.8f, 1.0f));
+        }
+        else {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.3f, 0.3f, 1.0f));
+        }
 
-        // Display the texture as an image button in ImGui
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-        if (ImGui::ImageButton((void*)icon, { thumbnailSize, thumbnailSize })) {
+        if (ImGui::Button(entry.c_str()) && !ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
             if (isDirectory) {
-                // Navigate into the directory
                 m_CurrentDirectory = fullPath;
             }
         }
 
-        // Begin drag-and-drop source when hovering over an item
+        // Handle drag-and-drop target for directories
+        if (isDirectory && ImGui::BeginDragDropTarget()) {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
+                std::wstring droppedPath = (const wchar_t*)payload->Data;
+                std::string filePath(droppedPath.begin(), droppedPath.end());
+
+                std::filesystem::path sourcePath(filePath);
+                std::filesystem::path targetPath = std::filesystem::path(fullPath) / sourcePath.filename();
+
+                try {
+                    std::filesystem::rename(sourcePath, targetPath);
+                }
+                catch (const std::exception& e) {
+                    std::cerr << "Failed to move file: " << e.what() << std::endl;
+                }
+            }
+            ImGui::EndDragDropTarget();
+        }
+
+        // Right-click context menu
+        if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
+            ImGui::OpenPopup("Context Menu");
+        }
+
+        if (ImGui::BeginPopup("Context Menu")) {
+            if (ImGui::MenuItem("Delete")) {
+                if (MessageBoxA(NULL, "Are you sure you want to delete this item?", "Confirm Deletion", MB_YESNO) == IDYES) {
+                    itemsToDelete.push_back(fullPath);
+                }
+            }
+            ImGui::EndPopup();
+        }
+
+        // Drag-and-drop source for files and folders
         if (ImGui::BeginDragDropSource()) {
-            // Set the drag payload with the item's path
             std::filesystem::path relativePath(fullPath);
             const wchar_t* itemPath = relativePath.c_str();
             ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t));
@@ -190,18 +271,8 @@ void MyGUI::ShowContentBrowser() {
         }
 
         ImGui::PopStyleColor();
-
-        // Double-click to open a directory
-        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
-            if (isDirectory)
-                m_CurrentDirectory = fullPath;
-        }
-
-        // Show the file or directory name
-        ImGui::TextWrapped(entry.c_str());
-        ImGui::NextColumn();
-
         ImGui::PopID();
+        ImGui::NextColumn();
     }
 
     ImGui::Columns(1);
@@ -209,30 +280,24 @@ void MyGUI::ShowContentBrowser() {
     ImGui::SliderFloat("Thumbnail Size", &thumbnailSize, 16, 512);
     ImGui::SliderFloat("Padding", &padding, 0, 32);
 
-    // Handle drag-and-drop target
-    if (ImGui::BeginDragDropTarget()) {
-        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-            std::wstring droppedPath = (const wchar_t*)payload->Data;
-            std::string filePath(droppedPath.begin(), droppedPath.end());
+    ImGui::End();
 
-            // Load the dropped file as a new GameObject
-            std::string extension = filePath.substr(filePath.find_last_of(".") + 1);
-            if (extension == "fbx") {
-                SceneManager::LoadGameObject(filePath);
-            }
-            else if (extension == "png" || extension == "jpg" || extension == "jpeg") {
-                if (SceneManager::selectedObject) {
-                    auto imageTexture = std::make_shared<Image>();
-                    imageTexture->loadTexture(filePath);
-                    SceneManager::selectedObject->setTextureImage(imageTexture);
-                }
+    // Perform deletions after rendering
+    for (const auto& item : itemsToDelete) {
+        bool isDirectory = (GetFileAttributesW(ConvertToWideString(item).c_str()) & FILE_ATTRIBUTE_DIRECTORY) != 0;
+
+        if (isDirectory) {
+            std::string command = "rmdir /s /q \"" + item + "\"";
+            system(command.c_str());
+        }
+        else {
+            if (remove(item.c_str()) != 0) {
+                std::cerr << "Error deleting file: " << item << std::endl;
             }
         }
-        ImGui::EndDragDropTarget();
     }
-
-    ImGui::End();
 }
+
 
 MyGUI::~MyGUI() {
 
