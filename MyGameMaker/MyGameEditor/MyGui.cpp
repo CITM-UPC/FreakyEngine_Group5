@@ -39,6 +39,8 @@ bool show_spawn_figures_window = false;
 
 bool show_spawn_empty_gameobjects_window = false;
 
+bool show_assets_window = false;
+
 static glm::vec3 accumulatedRotation = glm::vec3(0.0f); // Rotaciones iniciales (acumuladas)
 
 
@@ -136,6 +138,9 @@ void MyGUI::OnDropTarget() {
     }
 }
 void MyGUI::ShowContentBrowser() {
+    ImGui::SetNextWindowSize(ImVec2(680, 200), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(300, ImGui::GetIO().DisplaySize.y - 200), ImGuiCond_Always);
+
     ImGui::Begin("Content Browser");
 
     // Navigate to the parent directory if not at the base directory
@@ -372,6 +377,15 @@ void MyGUI::ShowMainMenuBar() {
             ImGui::Checkbox("Metrics", &show_metrics_window);
             ImGui::Checkbox("Hardware Info", &show_hardware_window);
             ImGui::Checkbox("Software Info", &show_software_window);
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("View")) {
+            if (ImGui::RadioButton("Console", !show_assets_window)) {
+                show_assets_window = false; // Show Console
+            }
+            if (ImGui::RadioButton("Assets", show_assets_window)) {
+                show_assets_window = true; // Show Assets
+            }
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
@@ -694,10 +708,15 @@ void MyGUI::render() {
     ShowHierarchy();
     renderInspector();
 
-    ShowContentBrowser();
 
-    ShowConsole();
 
+    if (show_assets_window) {
+        ShowContentBrowser();
+    }
+    else {
+        ShowConsole();
+
+    }
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
