@@ -8,7 +8,7 @@
 
 
 
-static const glm::ivec2 WINDOW_SIZE1(1280, 720);
+static const glm::ivec2 WINDOW_SIZE2(1280, 720);
 
 void FileDropHandler::handleFileDrop(const std::string& filePath, const glm::mat4& projection, const glm::mat4& view)
 {
@@ -18,6 +18,12 @@ void FileDropHandler::handleFileDrop(const std::string& filePath, const glm::mat
     SDL_GetMouseState(&mouseX, &mouseY);
 
     if (extension == "obj" || extension == "fbx" || extension == "dae") {
+
+        auto mesh = std::make_shared<Mesh>();
+        mesh = modelImporter.ImportModel(filePath.c_str());
+        modelImporter.SaveMeshToFile(mesh, "Library/CustomFreaks/StandardFreak" + std::to_string(freakCounter) + ".freak");
+        freakCounter++;
+
         SceneManager::LoadGameObject(filePath);
         SceneManager::getGameObject(SceneManager::gameObjectsOnScene.size() - 1)->transform().pos() =
             screenToWorld(glm::vec2(mouseX, mouseY), 10.0f, projection, view);
@@ -25,24 +31,71 @@ void FileDropHandler::handleFileDrop(const std::string& filePath, const glm::mat
     }
     else if (extension == "png" || extension == "jpg" || extension == "bmp") {
         imageTexture->loadTexture(filePath);
-        GameObject* hitObject = raycastFromMouseToGameObject(mouseX, mouseY, projection, view, WINDOW_SIZE1);
+        GameObject* hitObject = raycastFromMouseToGameObject(mouseX, mouseY, projection, view, WINDOW_SIZE2);
         if (hitObject) {
             hitObject->setTextureImage(imageTexture);
+            auto imageTexture = std::make_shared<Image>();
+            imageTexture = textureImporter.loadTexture(filePath.c_str());
+            textureImporter.SaveTextureToFile(imageTexture, "Library/CustomTexture/StandardTexture" + std::to_string(textureCounter) + ".texture");
             Console::Instance().Log("Texture applied to GameObject under mouse.");
         }
         else {
             Console::Instance().Log("No GameObject under mouse to apply texture.");
         }
     }
+    else if (extension == "freak") {
+
+
+        auto mesh = std::make_shared<Mesh>();
+        GameObject go;
+        mesh = modelImporter.LoadModelFromFile(filePath);
+        go.modelPath = filePath;
+        go.setMesh(mesh);
+        SceneManager::gameObjectsOnScene.push_back(go);
+        int newID = SceneManager::gameObjectsOnScene[SceneManager::gameObjectsOnScene.size() - 1].id;
+        go.id = newID + 1;
+
+    }
+    else if (extension == "texture") {
+
+
+        auto imageTexture = std::make_shared<Image>();
+        imageTexture = textureImporter.LoadTextureFromFile(filePath);
+        GameObject* hitObject = raycastFromMouseToGameObject(mouseX, mouseY, projection, view, WINDOW_SIZE2);
+        hitObject->setTextureImage(imageTexture);
+
+
+    }
+    else if (extension == "scene") {
+
+        // Intentamos cargar la escena desde el archivo .scene
+        try {
+            // Llamar a la función correcta para cargar la escena
+            SceneManager::loadScene(filePath);
+
+            // Si se desea, se puede establecer el primer objeto cargado como el seleccionado
+            if (!SceneManager::gameObjectsOnScene.empty()) {
+                SceneManager::selectedObject = &SceneManager::gameObjectsOnScene.back();  // O el primer objeto, según el caso
+            }
+
+            Console::Instance().Log("Scene loaded successfully from " + filePath);
+        }
+        catch (const std::exception& ex) {
+            std::cerr << "Error loading scene: " << ex.what() << std::endl;
+            Console::Instance().Log("Failed to load scene: " + std::string(ex.what()));
+        }
+    }
     else {
+        std::cout << "Unsupported file extension: " << extension << std::endl;
         Console::Instance().Log("Unsupported file extension: " + extension);
     }
 }
 
+
 glm::vec3 FileDropHandler::screenToWorld(const glm::vec2& mousePos, float depth, const glm::mat4& projection, const glm::mat4& view)
 {
-    float x = (2.0f * mousePos.x) / WINDOW_SIZE1.x - 1.0f;
-    float y = 1.0f - (2.0f * mousePos.y) / WINDOW_SIZE1.y;
+    float x = (2.0f * mousePos.x) / WINDOW_SIZE2.x - 1.0f;
+    float y = 1.0f - (2.0f * mousePos.y) / WINDOW_SIZE2.y;
     glm::vec4 clipCoords(x, y, -1.0f, 1.0f);
 
 
@@ -83,13 +136,6 @@ GameObject* FileDropHandler::raycastFromMouseToGameObject(int mouseX, int mouseY
         }
     }
     return hitObject;
-}
-
-std::string FileDropHandler::getFileExtension(const std::string& filePath)
-{
-    size_t dotPosition = filePath.rfind('.');
-    return (dotPosition == std::string::npos) ? "" : filePath.substr(dotPosition + 1);
-    return std::string();
 }
 
 glm::vec3 FileDropHandler::getRayFromMouse(int mouseX, int mouseY, const glm::mat4& projection, const glm::mat4& view, const glm::ivec2& viewportSize)
@@ -137,4 +183,47 @@ bool FileDropHandler::intersectRayWithBoundingBox(const glm::vec3& rayOrigin, co
     if (tzmax < tmax) tmax = tzmax;
 
     return tmin >= 0.0f;
+}
+std::string FileDropHandler::findAvailableName(const std::string& baseName) {
+    int counter = 1;
+    std::string newName = baseName;
+    while (isObjectWithNameExists(newName)) {
+        newName = baseName + std::to_string(counter);
+        counter++;
+    }
+    return newName;
+}
+
+bool FileDropHandler::isObjectWithNameExists(const std::string& name) {
+    for (const auto& gameObject : SceneManager::gameObjectsOnScene) {
+        if (gameObject.getName() == name) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void FileDropHandler::LoadCustomFile(const char* path)
+{
+    // Load file
+
+
+}
+std::string FileDropHandler::getFileExtension(const std::string& filePath) {
+    size_t dotPos = filePath.find_last_of('.');
+    if (dotPos == std::string::npos) return "";
+    return filePath.substr(dotPos + 1);
+}
+void FileDropHandler::LoadTexture(const std::string& path, GameObject& go) {
+    auto imageTexture = std::make_shared<Image>();
+
+    if (imageTexture->loadTexture(path), imageTexture->width() > 0) {
+        go.setTextureImage(imageTexture);
+        std::cout << "Texture loaded and applied to GameObject: " << go.getName() << std::endl;
+        Console::Instance().Log("Texture loaded and applied to GameObject: " + go.getName());
+    }
+    else {
+        std::cout << "Failed to load texture from path: " << path << std::endl;
+        Console::Instance().Log("Failed to load texture from path: " + path);
+    }
 }

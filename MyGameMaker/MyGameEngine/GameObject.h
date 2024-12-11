@@ -81,6 +81,7 @@ public:
 
     const auto& mesh() const { return *_mesh_ptr; }
     auto& mesh() { return *_mesh_ptr; }
+    std::shared_ptr<Mesh> getMeshPtr() const { return _mesh_ptr; }
 
     const std::string& getName() const { return name; }
     void setName(const std::string& newName) { name = newName; }

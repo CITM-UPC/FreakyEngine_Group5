@@ -13,7 +13,8 @@
 
 class FileDropHandler
 {
-  
+    ModelImporter modelImporter;
+    TextureImporter textureImporter;
 public:
     FileDropHandler() = default;
     FileDropHandler(const FileDropHandler&) = delete;
@@ -31,6 +32,13 @@ public:
     // Performs a raycast from the mouse position and returns the GameObject hit
     GameObject* raycastFromMouseToGameObject(int mouseX, int mouseY, const glm::mat4& projection, const glm::mat4& view, const glm::ivec2& viewportSize);
 
+    void LoadTexture(const std::string& path, GameObject& go);
+    // void LoadCustomFile(const std::string& path, GameObject& go);
+    void LoadCustomFile(const char* path);
+    int freakCounter = 0;
+    int textureCounter = 0;
+    std::string findAvailableName(const std::string& baseName);
+    bool isObjectWithNameExists(const std::string& name);
 private:
     // Helper function to get the file extension from a file path
     std::string getFileExtension(const std::string& filePath);

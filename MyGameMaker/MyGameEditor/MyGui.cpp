@@ -376,6 +376,27 @@ void MyGUI::ShowMainMenuBar() {
             ImGui::Checkbox("Spawn Empty GameObjects", &show_spawn_empty_gameobjects_window);
             ImGui::EndMenu();
         }
+        if (ImGui::BeginMenu("Scene")) {
+
+            if (ImGui::MenuItem("Save Scene")) {
+                const char* filterPatterns[1] = { "*.scene" };
+                const char* filePath = tinyfd_saveFileDialog(
+                    "Save Scene",
+                    "scene.scene",
+                    1,
+                    filterPatterns,
+                    NULL
+                );
+                if (filePath) {
+                    SceneManager::saveScene(filePath);
+                }
+            }
+            if (ImGui::MenuItem("Quit")) {
+                SDL_Quit();
+                exit(0);
+            }
+            ImGui::EndMenu();
+        }
         if (ImGui::BeginMenu("Help"))
         {
             if (ImGui::MenuItem("About"))
