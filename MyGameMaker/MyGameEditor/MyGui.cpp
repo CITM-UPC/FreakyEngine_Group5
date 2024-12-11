@@ -39,10 +39,15 @@ bool show_spawn_figures_window = false;
 
 bool show_spawn_empty_gameobjects_window = false;
 
-bool show_assets_window = false;
-
 static glm::vec3 accumulatedRotation = glm::vec3(0.0f); // Rotaciones iniciales (acumuladas)
 
+
+enum class ViewMode {
+    Console,
+    AssetsFolder
+};
+
+ViewMode currentViewMode = ViewMode::Console;
 
 MyGUI::MyGUI(SDL_Window* window, void* context) {
     IMGUI_CHECKVERSION();
@@ -137,7 +142,8 @@ void MyGUI::OnDropTarget() {
         ImGui::EndDragDropTarget();
     }
 }
-void MyGUI::ShowContentBrowser() {
+void MyGUI::ShowContentBrowser(bool* p_open) {
+    if (currentViewMode != ViewMode::AssetsFolder) return;
     ImGui::SetNextWindowSize(ImVec2(680, 200), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(300, ImGui::GetIO().DisplaySize.y - 200), ImGuiCond_Always);
 
@@ -192,9 +198,11 @@ void MyGUI::ShowContentBrowser() {
             // Copy the selected file to the current content browser directory
             std::filesystem::path sourcePath(filePath);
             std::filesystem::path targetPath = std::filesystem::path(m_CurrentDirectory) / sourcePath.filename();
-
-            try {
+    
+            Console::Instance().Log("Importing " + sourcePath.string() + "\"");
+              try {
                 std::filesystem::copy_file(sourcePath, targetPath, std::filesystem::copy_options::overwrite_existing);
+               
             }
             catch (const std::exception& e) {
                 std::cerr << "Failed to copy file: " << e.what() << std::endl;
@@ -296,6 +304,7 @@ void MyGUI::ShowContentBrowser() {
             system(command.c_str());
         }
         else {
+            Console::Instance().Log("Deleting " + item + "\"");
             if (remove(item.c_str()) != 0) {
                 std::cerr << "Error deleting file: " << item << std::endl;
             }
@@ -379,21 +388,12 @@ void MyGUI::ShowMainMenuBar() {
             ImGui::Checkbox("Software Info", &show_software_window);
             ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu("View")) {
-            if (ImGui::RadioButton("Console", !show_assets_window)) {
-                show_assets_window = false; // Show Console
-            }
-            if (ImGui::RadioButton("Assets", show_assets_window)) {
-                show_assets_window = true; // Show Assets
-            }
-            ImGui::EndMenu();
-        }
         ImGui::EndMainMenuBar();
     }
 }
 
 void MyGUI::ShowConsole() {
-
+    if (currentViewMode != ViewMode::Console) return;
     ImGui::SetNextWindowSize(ImVec2(680, 200), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(300, ImGui::GetIO().DisplaySize.y - 200), ImGuiCond_Always);
 
@@ -584,6 +584,7 @@ void MyGUI::ShowHierarchy() {
     }
 }
 void MyGUI::renderInspector() {
+
     ImGui::SetNextWindowSize(ImVec2(300, 700), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(980, 20), ImGuiCond_Always);
     ImGui::Begin("Inspector");
@@ -698,6 +699,30 @@ void MyGUI::renderInspector() {
 
     ImGui::End();
 }
+void MyGUI::ShowMainWindow() {
+    ImGui::SetNextWindowSize(ImVec2(180, 55), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(300, ImGui::GetIO().DisplaySize.y - 225), ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(0.0f);
+    ImGui::Begin("Main Window", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBringToFrontOnFocus); // Añadir la bandera ImGuiWindowFlags_NoBringToFrontOnFocus
+
+    if (ImGui::BeginTabBar("MainTabBar")) {
+        if (ImGui::BeginTabItem("Console")) {
+            currentViewMode = ViewMode::Console;  // Switch to Console view
+            ShowConsole();  // Show the Console content
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Assets Folder")) {
+            currentViewMode = ViewMode::AssetsFolder;  // Switch to Assets Folder view
+            ShowContentBrowser(nullptr);  // Show the Assets Folder content
+            ImGui::EndTabItem();
+        }
+        ImGui::EndTabBar();
+    }
+
+    ImGui::End();
+}
+
+
 void MyGUI::render() {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame();
@@ -710,18 +735,18 @@ void MyGUI::render() {
 
 
 
-    if (show_assets_window) {
-        ShowContentBrowser();
-    }
-    else {
-        ShowConsole();
+    //ShowContentBrowser();
 
-    }
+    ShowMainWindow(); // Includes the unified Content Browser and Console
+
+
+    //ShowConsole();
+
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
 }
+
 
 
 void MyGUI::handleEvent(const SDL_Event& event) {

@@ -20,6 +20,7 @@ public:
 	~MyGUI();
 	void render();
 	void renderInspector();
+	void ShowMainWindow();
 	void processEvent(const SDL_Event& event) override;
 	void handleEvent(const SDL_Event& event);
 
@@ -44,7 +45,7 @@ public:
 
 	void HandleDroppedFile(const char* filePath);
 
-	void ShowContentBrowser();
+	void ShowContentBrowser(bool* p_open);
 
 private:
 
