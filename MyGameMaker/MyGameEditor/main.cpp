@@ -25,6 +25,7 @@
 #include "SceneManager.h"
 #include "Console.h"
 #include "FileDropHandler.h"
+#include "SceneImporter.h"
 
 using namespace std;
 using hrclock = chrono::high_resolution_clock;
@@ -493,7 +494,12 @@ int main(int argc, char* argv[]) {
     SceneManager::gameObjectsOnScene.push_back(testCamera);
     testCamera.GetComponent<CameraComponent>()->camera().transform().pos() = vec3(0, 1, 4);
     testCamera.GetComponent<CameraComponent>()->camera().transform().rotate(glm::radians(180.0), vec3(0, 1, 0));
-    SceneManager::spawnBakerHouse();
+    //SceneManager::spawnBakerHouse();
+
+	GameObject scene1 = SceneImporter::loadFromFile("Assets/BakerHouse.fbx");
+	GameObject scene2 = SceneImporter::loadFromFile("Assets/strawberry.fbx");
+	//GameObject scene3 = SceneImporter::loadFromFile("Assets/Street environment_V01.fbx");
+	GameObject scene3 = SceneImporter::loadFromFile("Assets/street2.fbx");
 
     while (window.isOpen()) {
         const auto t0 = hrclock::now();

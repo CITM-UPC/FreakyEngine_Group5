@@ -26,7 +26,7 @@ public:
 	~Image();
 
 	void bind() const;
-	void load(int width, int height, int channels, void* data);
+	void load(int width, int height, int channels, const void* data);
 	void loadTexture(const std::string& path);
 	static GLenum formatFromChannels(int channels) {
 		switch (channels) {
