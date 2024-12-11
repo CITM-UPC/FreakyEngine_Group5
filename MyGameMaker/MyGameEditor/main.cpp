@@ -42,7 +42,7 @@ SDL_Event event;
 bool rightMouseButtonDown = false;
 int lastMouseX, lastMouseY;
 FileDropHandler fileDropHandler;
-// Inicialización de OpenGL
+// Initialization de OpenGL
 void initOpenGL() {
     glewInit();
     glEnable(GL_DEPTH_TEST);
@@ -57,116 +57,116 @@ glm::vec2 getMousePosition() {
     return glm::vec2(static_cast<float>(x), static_cast<float>(y));
 }
 
-//Funcion para convertir de coordenadas de pantalla a coordenadas del mundo
-glm::vec3 screenToWorld(const glm::vec2& mousePos, float depth, const glm::mat4& projection, const glm::mat4& view) {
-
-    float x = (2.0f * mousePos.x) / WINDOW_SIZE.x - 1.0f;
-    float y = 1.0f - (2.0f * mousePos.y) / WINDOW_SIZE.y;  
-    glm::vec4 clipCoords(x, y, -1.0f, 1.0f); 
-
-
-    glm::vec4 eyeCoords = glm::inverse(projection) * clipCoords;
-    eyeCoords = glm::vec4(eyeCoords.x, eyeCoords.y, -1.0f, 0.0f);
-
-
-    glm::vec3 worldRay = glm::vec3(glm::inverse(view) * eyeCoords);
-    worldRay = glm::normalize(worldRay);
-
-
-    glm::vec3 cameraPosition = glm::vec3(glm::inverse(view)[3]); 
-    return cameraPosition + worldRay * depth;
-}
-
-
-
-//RayCastFunctions
-glm::vec3 getRayFromMouse(int mouseX, int mouseY, const glm::mat4& projection, const glm::mat4& view, const glm::ivec2& viewportSize) {
-    float x = (2.0f * mouseX) / viewportSize.x - 1.0f;
-    float y = 1.0f - (2.0f * mouseY) / viewportSize.y;
-    glm::vec4 rayClip = glm::vec4(x, y, -1.0f, 1.0f);
-
-    glm::vec4 rayEye = glm::inverse(projection) * rayClip;
-    rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
-
-    glm::vec3 rayWorld = glm::normalize(glm::vec3(glm::inverse(view) * rayEye));
-    return rayWorld;
-}
-
-
-bool intersectRayWithBoundingBox(const glm::vec3& rayOrigin, const glm::vec3& rayDirection, const BoundingBox& bbox) {
-    float tmin = (bbox.min.x - rayOrigin.x) / rayDirection.x;
-    float tmax = (bbox.max.x - rayOrigin.x) / rayDirection.x;
-
-    if (tmin > tmax) std::swap(tmin, tmax);
-
-    float tymin = (bbox.min.y - rayOrigin.y) / rayDirection.y;
-    float tymax = (bbox.max.y - rayOrigin.y) / rayDirection.y;
-
-    if (tymin > tymax) std::swap(tymin, tymax);
-
-    if ((tmin > tymax) || (tymin > tmax)) {
-        return false;
-    }
-
-    if (tymin > tmin) tmin = tymin;
-    if (tymax < tmax) tmax = tymax;
-
-    float tzmin = (bbox.min.z - rayOrigin.z) / rayDirection.z;
-    float tzmax = (bbox.max.z - rayOrigin.z) / rayDirection.z;
-
-    if (tzmin > tzmax) std::swap(tzmin, tzmax);
-
-    if ((tmin > tzmax) || (tzmin > tmax)) {
-        return false;
-    }
-
-    if (tzmin > tmin) tmin = tzmin;
-    if (tzmax < tmax) tmax = tzmax;
-
-    return tmin >= 0.0f;
-}
-// Raycast desde el mouse para detectar si está sobre un GameObject
-GameObject* raycastFromMouseToGameObject(int mouseX, int mouseY, const glm::mat4& projection, const glm::mat4& view, const glm::ivec2& viewportSize) {
-    glm::vec3 rayOrigin = glm::vec3(glm::inverse(view) * glm::vec4(0, 0, 0, 1));
-    glm::vec3 rayDirection = getRayFromMouse(mouseX, mouseY, projection, view, viewportSize);
-
-    GameObject* hitObject = nullptr;
-
-    for (auto& go : SceneManager::gameObjectsOnScene) {
-        // Transformar bounding box del padre al espacio global
-        BoundingBox globalBoundingBox = go.worldTransform().mat() * go.localBoundingBox();
-        if (intersectRayWithBoundingBox(rayOrigin, rayDirection, globalBoundingBox)) {
-            hitObject = &go;
-
-            // Verificar los hijos en el espacio global
-            for (auto& child : go.children()) {
-                BoundingBox childGlobalBoundingBox = child.worldTransform().mat() * child.localBoundingBox();
-                if (intersectRayWithBoundingBox(rayOrigin, rayDirection, childGlobalBoundingBox)) {
-                    hitObject = &child;
-                    break;
-                }
-            }
-            break;
-        }
-    }
-    return hitObject;
-}
+////Funcion para convertir de coordenadas de pantalla a coordenadas del mundo
+//glm::vec3 screenToWorld(const glm::vec2& mousePos, float depth, const glm::mat4& projection, const glm::mat4& view) {
+//
+//    float x = (2.0f * mousePos.x) / WINDOW_SIZE.x - 1.0f;
+//    float y = 1.0f - (2.0f * mousePos.y) / WINDOW_SIZE.y;  
+//    glm::vec4 clipCoords(x, y, -1.0f, 1.0f); 
+//
+//
+//    glm::vec4 eyeCoords = glm::inverse(projection) * clipCoords;
+//    eyeCoords = glm::vec4(eyeCoords.x, eyeCoords.y, -1.0f, 0.0f);
+//
+//
+//    glm::vec3 worldRay = glm::vec3(glm::inverse(view) * eyeCoords);
+//    worldRay = glm::normalize(worldRay);
+//
+//
+//    glm::vec3 cameraPosition = glm::vec3(glm::inverse(view)[3]); 
+//    return cameraPosition + worldRay * depth;
+//}
 
 
 
-//File drop handler
-std::string getFileExtension(const std::string& filePath) {
-    // Find the last dot in the file path
-    size_t dotPosition = filePath.rfind('.');
-
-    // If no dot is found, return an empty string
-    if (dotPosition == std::string::npos) {
-        return "";
-    }
-
-    // Extract and return the file extension
-    return filePath.substr(dotPosition + 1);
-}
+////RayCastFunctions
+//glm::vec3 getRayFromMouse(int mouseX, int mouseY, const glm::mat4& projection, const glm::mat4& view, const glm::ivec2& viewportSize) {
+//    float x = (2.0f * mouseX) / viewportSize.x - 1.0f;
+//    float y = 1.0f - (2.0f * mouseY) / viewportSize.y;
+//    glm::vec4 rayClip = glm::vec4(x, y, -1.0f, 1.0f);
+//
+//    glm::vec4 rayEye = glm::inverse(projection) * rayClip;
+//    rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
+//
+//    glm::vec3 rayWorld = glm::normalize(glm::vec3(glm::inverse(view) * rayEye));
+//    return rayWorld;
+//}
+//
+//
+//bool intersectRayWithBoundingBox(const glm::vec3& rayOrigin, const glm::vec3& rayDirection, const BoundingBox& bbox) {
+//    float tmin = (bbox.min.x - rayOrigin.x) / rayDirection.x;
+//    float tmax = (bbox.max.x - rayOrigin.x) / rayDirection.x;
+//
+//    if (tmin > tmax) std::swap(tmin, tmax);
+//
+//    float tymin = (bbox.min.y - rayOrigin.y) / rayDirection.y;
+//    float tymax = (bbox.max.y - rayOrigin.y) / rayDirection.y;
+//
+//    if (tymin > tymax) std::swap(tymin, tymax);
+//
+//    if ((tmin > tymax) || (tymin > tmax)) {
+//        return false;
+//    }
+//
+//    if (tymin > tmin) tmin = tymin;
+//    if (tymax < tmax) tmax = tymax;
+//
+//    float tzmin = (bbox.min.z - rayOrigin.z) / rayDirection.z;
+//    float tzmax = (bbox.max.z - rayOrigin.z) / rayDirection.z;
+//
+//    if (tzmin > tzmax) std::swap(tzmin, tzmax);
+//
+//    if ((tmin > tzmax) || (tzmin > tmax)) {
+//        return false;
+//    }
+//
+//    if (tzmin > tmin) tmin = tzmin;
+//    if (tzmax < tmax) tmax = tzmax;
+//
+//    return tmin >= 0.0f;
+//}
+//// Raycast desde el mouse para detectar si está sobre un GameObject
+//GameObject* raycastFromMouseToGameObject(int mouseX, int mouseY, const glm::mat4& projection, const glm::mat4& view, const glm::ivec2& viewportSize) {
+//    glm::vec3 rayOrigin = glm::vec3(glm::inverse(view) * glm::vec4(0, 0, 0, 1));
+//    glm::vec3 rayDirection = getRayFromMouse(mouseX, mouseY, projection, view, viewportSize);
+//
+//    GameObject* hitObject = nullptr;
+//
+//    for (auto& go : SceneManager::gameObjectsOnScene) {
+//        // Transformar bounding box del padre al espacio global
+//        BoundingBox globalBoundingBox = go.worldTransform().mat() * go.localBoundingBox();
+//        if (intersectRayWithBoundingBox(rayOrigin, rayDirection, globalBoundingBox)) {
+//            hitObject = &go;
+//
+//            // Verificar los hijos en el espacio global
+//            for (auto& child : go.children()) {
+//                BoundingBox childGlobalBoundingBox = child.worldTransform().mat() * child.localBoundingBox();
+//                if (intersectRayWithBoundingBox(rayOrigin, rayDirection, childGlobalBoundingBox)) {
+//                    hitObject = &child;
+//                    break;
+//                }
+//            }
+//            break;
+//        }
+//    }
+//    return hitObject;
+//}
+//
+//
+//
+////File drop handler
+//std::string getFileExtension(const std::string& filePath) {
+//    // Find the last dot in the file path
+//    size_t dotPosition = filePath.rfind('.');
+//
+//    // If no dot is found, return an empty string
+//    if (dotPosition == std::string::npos) {
+//        return "";
+//    }
+//
+//    // Extract and return the file extension
+//    return filePath.substr(dotPosition + 1);
+//}
 
 
 
@@ -525,14 +525,15 @@ int main(int argc, char* argv[]) {
 				window.close();
 				break;
             case SDL_DROPFILE:               
-				cout << "File dropped: " << event.drop.file << endl;
+				cout << "File dropped: " << event.drop.file << endl; 
                 fileDropHandler.handleFileDrop(event.drop.file, projection, view);
                 SDL_free(event.drop.file);
+                break;
                 break;
             case SDL_MOUSEBUTTONDOWN:
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     // Raycast para detectar el objeto debajo del mouse
-                    SceneManager::selectedObject = raycastFromMouseToGameObject(mouseScreenPos.x, mouseScreenPos.y, projection, view, WINDOW_SIZE);
+                    SceneManager::selectedObject = fileDropHandler.raycastFromMouseToGameObject(mouseScreenPos.x, mouseScreenPos.y, projection, view, WINDOW_SIZE);
                 }
             case SDL_MOUSEBUTTONUP:
                 mouseButton_func(event.button.button, event.button.state, event.button.x, event.button.y);
@@ -544,8 +545,8 @@ int main(int argc, char* argv[]) {
                 mouseWheel_func(event.wheel.y);
                 break;
             case SDL_KEYDOWN:
-                glm::vec3 mouseWorldPos = screenToWorld(mouseScreenPos, 10.0f, projection, view);
-
+                glm::vec3 mouseWorldPos = fileDropHandler.screenToWorld(mouseScreenPos, 10.0f, projection, view);
+                
                 // Crear figuras en la posición 3D calculada
                 switch (event.key.keysym.sym) {
                 case SDLK_1:  // Crear Triángulo
