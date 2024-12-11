@@ -33,7 +33,7 @@ public:
     Transform() = default;
     Transform(const mat4& mat) : _mat(mat) {}
 
-    
+    void updateRotationMatrix();
     void setScale(const glm::vec3& scale);
     const vec3& GetRotation() const;
     void translate(const vec3& v);
@@ -42,10 +42,7 @@ public:
     double getPitch() const;
     double getRoll() const;
     void setRotation(float newPitch, float newYaw, float newRoll);
-    void rotateYaw(double radians);
-    void rotatePitch(double radians);
-    void rotateRoll(double radians);
-    void rotate(double rads, const vec3& v);
+    void rotate(double rads, const glm::vec3& v);
     void rotateWithVector(const vec3& v);
     void lookAt(const vec3& target);
     void alignCamera(const vec3& worldUp = vec3(0.0f, 1.0f, 0.0f));

@@ -5,6 +5,7 @@
 #include "BasicShapesManager.h"
 #include "SystemInfo.h"
 #include "Console.h"
+#include <glm/gtc/type_ptr.hpp>
 
 
 #include <SDL2/SDL.h>
@@ -618,72 +619,52 @@ void MyGUI::renderInspector() {
 
     if (persistentSelectedObject) {
         if (ImGui::CollapsingHeader("Transform")) {
-            glm::vec3 position = persistentSelectedObject->GetComponent<TransformComponent>()->transform().pos();
-            glm::vec3 rotation = persistentSelectedObject->GetComponent<TransformComponent>()->transform().GetRotation();
-            glm::vec3 scale = persistentSelectedObject->GetComponent<TransformComponent>()->transform().extractScale(persistentSelectedObject->GetComponent<TransformComponent>()->transform().mat());
-
+            Transform& transform = persistentSelectedObject->GetComponent<TransformComponent>()->transform();
+            glm::vec3 position = transform.pos();
+            glm::vec3 rotation = glm::vec3(transform.extractEulerAngles(transform.mat()));
+            glm::vec3 scale = transform.extractScale(transform.mat());
+            // Reducir el ancho de los controles
+			ImGui::PushItemWidth(100.0f);
             // Controles para la posición
             ImGui::Text("Position:");
-            ImGui::PushItemWidth(100);
-            if (ImGui::DragFloat("X##pos", &position.x, 0.1f)) {
-                persistentSelectedObject->GetComponent<TransformComponent>()->transform().setPos(position.x, position.y, position.z);
+            if (ImGui::DragFloat("X##pos", &position.x, 0.1f, -1000.0f, 1000.0f, "%.3f")) {
+                transform.pos() = position;
             }
-            ImGui::NewLine();
-            if (ImGui::DragFloat("Y##pos", &position.y, 0.1f)) {
-                persistentSelectedObject->GetComponent<TransformComponent>()->transform().setPos(position.x, position.y, position.z);
+            if (ImGui::DragFloat("Y##pos", &position.y, 0.1f, -1000.0f, 1000.0f, "%.3f")) {
+                transform.pos() = position;
             }
-            ImGui::NewLine();
-            if (ImGui::DragFloat("Z##pos", &position.z, 0.1f)) {
-                persistentSelectedObject->GetComponent<TransformComponent>()->transform().setPos(position.x, position.y, position.z);
+            if (ImGui::DragFloat("Z##pos", &position.z, 0.1f, -1000.0f, 1000.0f, "%.3f")) {
+                transform.pos() = position;
             }
-            ImGui::PopItemWidth();
 
+            ImGui::Separator(); 
 
             // Controles para la rotación
             ImGui::Text("Rotation:");
-            ImGui::PushItemWidth(100);
-
-            //  X Rotation
-            float deltaX = 0.0f;
-            if (ImGui::DragFloat("X##rot", &accumulatedRotation.x, 0.1f, -360.0f, 360.0f, "%.3f")) {
-                deltaX = accumulatedRotation.x - persistentSelectedObject->transform().GetRotation().x;
-                if (deltaX != 0.0f) {
-                    persistentSelectedObject->transform().rotate(glm::radians(deltaX), glm::vec3(1.0f, 0.0f, 0.0f));
-                }
+            static glm::vec3 inputRotation = glm::vec3(0.0f);
+            if (ImGui::DragFloat("X##rot", &inputRotation.x, 0.1f, -360.0f, 360.0f, "%.3f")) {
+                transform.setRotation(glm::radians(inputRotation.x), glm::radians(inputRotation.y), glm::radians(inputRotation.z));
             }
-            //  Y Rotation
-            float deltaY = 0.0f;
-            if (ImGui::DragFloat("Y##rot", &accumulatedRotation.y, 0.1f, -360.0f, 360.0f, "%.3f")) {
-                deltaY = accumulatedRotation.y - persistentSelectedObject->transform().GetRotation().y;
-                if (deltaY != 0.0f) {
-                    persistentSelectedObject->transform().rotate(glm::radians(deltaY), glm::vec3(0.0f, 1.0f, 0.0f));
-                }
+            if (ImGui::DragFloat("Y##rot", &inputRotation.y, 0.1f, -360.0f, 360.0f, "%.3f")) {
+                transform.setRotation(glm::radians(inputRotation.x), glm::radians(inputRotation.y), glm::radians(inputRotation.z));
             }
-            //  Z Rotation
-            float deltaZ = 0.0f;
-            if (ImGui::DragFloat("Z##rot", &accumulatedRotation.z, 0.1f, -360.0f, 360.0f, "%.3f")) {
-                deltaZ = accumulatedRotation.z - persistentSelectedObject->transform().GetRotation().z;
-                if (deltaZ != 0.0f) {
-                    persistentSelectedObject->transform().rotate(glm::radians(deltaZ), glm::vec3(0.0f, 0.0f, 1.0f));
-                }
+            if (ImGui::DragFloat("Z##rot", &inputRotation.z, 0.1f, -360.0f, 360.0f, "%.3f")) {
+                transform.setRotation(glm::radians(inputRotation.x), glm::radians(inputRotation.y), glm::radians(inputRotation.z));
             }
 
-            ImGui::PopItemWidth();
-
+            ImGui::Separator(); 
 
             // Controles para la escala
             ImGui::Text("Scale:");
-            ImGui::PushItemWidth(100);
-            if (ImGui::DragFloat("X##scale", &scale.x, 0.1f, 0.01f, 100.0f)) {
-                persistentSelectedObject->transform().setScale(scale);
+            if (ImGui::DragFloat("X##scale", &scale.x, 0.01f, 0.001f, 10.0f, "%.3f")) {
+                transform.setScale(scale);
             }
-            if (ImGui::DragFloat("Y##scale", &scale.y, 0.1f, 0.01f, 100.0f)) {
-                persistentSelectedObject->transform().setScale(scale);
+            if (ImGui::DragFloat("Y##scale", &scale.y, 0.01f, 0.001f, 10.0f, "%.3f")) {
+                transform.setScale(scale);
             }
-            if (ImGui::DragFloat("Z##scale", &scale.z, 0.1f, 0.01f, 100.0f)) {
-                persistentSelectedObject->transform().setScale(scale);
+            if (ImGui::DragFloat("Z##scale", &scale.z, 0.01f, 0.001f, 10.0f, "%.3f")) {
+                transform.setScale(scale);
             }
-            ImGui::PopItemWidth();
         }
 
         if (persistentSelectedObject->hasMesh() && ImGui::CollapsingHeader("Mesh")) {

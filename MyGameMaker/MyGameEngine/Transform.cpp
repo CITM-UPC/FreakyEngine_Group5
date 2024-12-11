@@ -25,29 +25,78 @@ const vec3& Transform::GetRotation() const
     return eulerAngles;
 }
 void Transform::setScale(const glm::vec3& scale) {
-    glm::vec3 currentScale = extractScale(_mat);
+    vec3 currentPos = _pos;
     glm::vec3 newScale = scale;
-    _mat[0] = glm::vec4(newScale.x, _mat[0][1], _mat[0][2], _mat[0][3]); // Scale x
-    _mat[1] = glm::vec4(_mat[1][0], newScale.y, _mat[1][2], _mat[1][3]); // Scale y
-    _mat[2] = glm::vec4(_mat[2][0], _mat[2][1], newScale.z, _mat[2][3]); // Scale z
+
+    glm::vec3 left = glm::normalize(glm::vec3(_mat[0]));
+    glm::vec3 up = glm::normalize(glm::vec3(_mat[1]));
+    glm::vec3 forward = glm::normalize(glm::vec3(_mat[2]));
+
+    _mat[0] = vec4(left * newScale.x, 0.0f);
+    _mat[1] = vec4(up * newScale.y, 0.0f);
+    _mat[2] = vec4(forward * newScale.z, 0.0f);
+    _mat[3] = vec4(currentPos, 1.0f);
 }
 void Transform::setPos(float x, float y, float z) {
     // Actualiza la posición del transform
     _pos = glm::vec3(x, y, z);
-
-    // Recalcula la matriz de transformación usando la nueva posición
-    //updateRotationMatrix();
 }
+void Transform::updateRotationMatrix() {
+    float cosYaw = cos(yaw);
+    float sinYaw = sin(yaw);
+    float cosPitch = cos(pitch);
+    float sinPitch = sin(pitch);
+    float cosRoll = cos(roll);
+    float sinRoll = sin(roll);
 
+    mat4 yawMatrix = {
+        cosYaw, 0, sinYaw, 0,
+        0, 1, 0, 0,
+        -sinYaw, 0, cosYaw, 0,
+        0, 0, 0, 1
+    };
+
+    mat4 pitchMatrix = {
+        1, 0, 0, 0,
+        0, cosPitch, -sinPitch, 0,
+        0, sinPitch, cosPitch, 0,
+        0, 0, 0, 1
+    };
+
+    mat4 rollMatrix = {
+        cosRoll, -sinRoll, 0, 0,
+        sinRoll, cosRoll, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    };
+
+    vec3 currentScale = extractScale(_mat);
+    vec3 currentPos = _pos;
+
+    _mat = rollMatrix * pitchMatrix * yawMatrix;
+
+    // Restore position and scale
+    _mat[3] = vec4(currentPos, 1.0f);
+    setScale(currentScale);
+}
 void Transform::setRotation(float newPitch, float newYaw, float newRoll) {
-   /* pitch = newPitch;
+    pitch = newPitch;
     yaw = newYaw;
-    roll = newRoll;*/
-    rotateWithVector( glm::vec3 (newPitch,newYaw,newRoll));
+    roll = newRoll;
+    updateRotationMatrix();
 }
 
-void Transform::rotate(double rads, const vec3& v) {
-    _mat = glm::rotate(_mat, rads, v);
+void Transform::rotate(double rads, const glm::vec3& v) {
+    glm::mat4 currentTransform = _mat;
+    glm::vec3 currentScale = extractScale(currentTransform);
+    glm::vec3 currentPos = _pos;
+
+    // Apply the rotation
+    _mat = glm::rotate(currentTransform, static_cast<float>(rads), v);
+
+    // Restore position and scale
+    _mat[3] = glm::vec4(currentPos, 1.0f);
+    setScale(currentScale);
 }
 void Transform::rotateWithVector(const vec3& inputVector) {
     // Calcula el ángulo como la magnitud del vector
@@ -110,7 +159,7 @@ glm::vec3 Transform::extractEulerAngles(const glm::mat4& mat) const{
 
     return glm::vec3(glm::degrees(pitch), glm::degrees(yaw), glm::degrees(roll));
 }
-glm::vec3 Transform::extractScale(const glm::mat4& mat) const{
+glm::vec3 Transform::extractScale(const glm::mat4& mat) const {
     glm::vec3 left(mat[0][0], mat[0][1], mat[0][2]);
     glm::vec3 up(mat[1][0], mat[1][1], mat[1][2]);
     glm::vec3 forward(mat[2][0], mat[2][1], mat[2][2]);
