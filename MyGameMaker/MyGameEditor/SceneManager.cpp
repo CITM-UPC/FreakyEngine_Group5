@@ -7,6 +7,8 @@
 #include "ModelImporter.h"
 #define _CRT_SECURE_NO_WARNINGS
 #include <cstdio>
+#include <fstream>
+#include <filesystem>
 
 ModelImporter SceneManager::modelImporter;
 
@@ -65,171 +67,147 @@ void SceneManager::DestroyGameObject(GameObject* go) {
     }
 }
 void SceneManager::saveScene(const std::string& filePath) {
-    std::ofstream outFile(filePath, std::ios::out);
+    std::ofstream outFile(filePath, std::ios::binary);
     if (!outFile) {
         Console::Instance().Log("Failed to open file for saving scene: " + filePath);
         return;
     }
 
-    outFile << "{\n\"GameObjects\": [\n";
-    for (size_t i = 0; i < SceneManager::gameObjectsOnScene.size(); ++i) {
-        const auto& go = SceneManager::gameObjectsOnScene[i];
-        const auto& transform = go.GetComponent<TransformComponent>()->transform();
+    size_t gameObjectCount = SceneManager::gameObjectsOnScene.size();
+    outFile.write(reinterpret_cast<const char*>(&gameObjectCount), sizeof(gameObjectCount));
 
-        outFile << "  {\n";
-        //      outFile << "    \"UID\": " << go.getUUID() << ",\n";
-        outFile << "    \"Name\": \"" << go.getName() << "\",\n";
-        outFile << "    \"Transform\": {\n";
-        outFile << "      \"Position\": [" << transform.pos().x << ", " << transform.pos().y << ", " << transform.pos().z << "],\n";
-        outFile << "      \"Scale\": [" << transform.extractScale(transform.mat()).x << ", " << transform.extractScale(transform.mat()).y << ", " << transform.extractScale(transform.mat()).z << "],\n";
-        outFile << "      \"Rotation\": [" << transform.extractEulerAngles(transform.mat()).x << ", " << transform.extractEulerAngles(transform.mat()).y << ", " << transform.extractEulerAngles(transform.mat()).z << "]\n";
-        outFile << "    }";
+    for (const auto& gameObject : SceneManager::gameObjectsOnScene) {
+        // Save GameObject name
+        const std::string& name = gameObject.getName();
+        size_t nameLength = name.size();
+        outFile.write(reinterpret_cast<const char*>(&nameLength), sizeof(nameLength));
+        outFile.write(name.data(), nameLength);
 
-        // Guardar datos de la malla
-        if (go.hasMesh()) {
-            const auto& mesh = go.getMeshPtr();
-            outFile << ",\n    \"Mesh\": {\n";
+        // Save Transform
+        const auto& transform = gameObject.GetComponent<TransformComponent>()->transform();
+        glm::vec3 position = transform.pos();
+        glm::vec3 scale = transform.extractScale(transform.mat());
+        glm::vec3 rotation = transform.extractEulerAngles(transform.mat());
+        outFile.write(reinterpret_cast<const char*>(&position), sizeof(position));
+        outFile.write(reinterpret_cast<const char*>(&scale), sizeof(scale));
+        outFile.write(reinterpret_cast<const char*>(&rotation), sizeof(rotation));
 
-            // Serializar vértices
+        // Save Mesh
+        if (gameObject.hasMesh()) {
+            const auto& mesh = gameObject.getMeshPtr();
+            bool hasMesh = true;
+            outFile.write(reinterpret_cast<const char*>(&hasMesh), sizeof(hasMesh));
+
+            // Save vertices
             const auto& vertices = mesh->vertices();
-            outFile << "      \"Vertices\": [";
-            for (size_t j = 0; j < vertices.size(); ++j) {
-                outFile << "[" << vertices[j].x << ", " << vertices[j].y << ", " << vertices[j].z << "]";
-                if (j != vertices.size() - 1) outFile << ", ";
-            }
-            outFile << "],\n";
+            size_t vertexCount = vertices.size();
+            outFile.write(reinterpret_cast<const char*>(&vertexCount), sizeof(vertexCount));
+            outFile.write(reinterpret_cast<const char*>(vertices.data()), vertexCount * sizeof(glm::vec3));
 
-            // Serializar índices
+            // Save indices
             const auto& indices = mesh->indices();
-            outFile << "      \"Indices\": [";
-            for (size_t j = 0; j < indices.size(); ++j) {
-                outFile << indices[j];
-                if (j != indices.size() - 1) outFile << ", ";
-            }
-            outFile << "],\n";
+            size_t indexCount = indices.size();
+            outFile.write(reinterpret_cast<const char*>(&indexCount), sizeof(indexCount));
+            outFile.write(reinterpret_cast<const char*>(indices.data()), indexCount * sizeof(unsigned int));
 
-            // Serializar coordenadas de textura
+            // Save texture coordinates
             const auto& texCoords = mesh->texCoords();
-            outFile << "      \"TexCoords\": [";
-            for (size_t j = 0; j < texCoords.size(); ++j) {
-                outFile << "[" << texCoords[j].x << ", " << texCoords[j].y << "]";
-                if (j != texCoords.size() - 1) outFile << ", ";
-            }
-            outFile << "],\n";
+            size_t texCoordCount = texCoords.size();
+            outFile.write(reinterpret_cast<const char*>(&texCoordCount), sizeof(texCoordCount));
+            outFile.write(reinterpret_cast<const char*>(texCoords.data()), texCoordCount * sizeof(glm::vec2));
 
-            // Serializar caja delimitadora
+            // Save bounding box
             const auto& boundingBox = mesh->boundingBox();
-            outFile << "      \"BoundingBox\": {\n";
-            outFile << "        \"Min\": [" << boundingBox.min.x << ", " << boundingBox.min.y << ", " << boundingBox.min.z << "],\n";
-            outFile << "        \"Max\": [" << boundingBox.max.x << ", " << boundingBox.max.y << ", " << boundingBox.max.z << "]\n";
-            outFile << "      }\n";
-
-            outFile << "    }";
+            outFile.write(reinterpret_cast<const char*>(&boundingBox), sizeof(BoundingBox));
         }
-
-        outFile << "\n  }";
-        if (i != SceneManager::gameObjectsOnScene.size() - 1) outFile << ",";
-        outFile << "\n";
+        else {
+            bool hasMesh = false;
+            outFile.write(reinterpret_cast<const char*>(&hasMesh), sizeof(hasMesh));
+        }
     }
-    outFile << "]\n}";
-    outFile.close();
 
+    outFile.close();
     Console::Instance().Log("Scene saved to " + filePath);
 }
 
 void SceneManager::loadScene(const std::string& filePath) {
-    std::ifstream inFile(filePath, std::ios::in);
+    std::ifstream inFile(filePath, std::ios::binary);
     if (!inFile) {
         Console::Instance().Log("Failed to open file for loading scene: " + filePath);
         return;
     }
 
-    SceneManager::gameObjectsOnScene.clear(); // Clear current scene
-    std::string line;
+    SceneManager::gameObjectsOnScene.clear();
 
-    while (std::getline(inFile, line)) {
-        if (line.find("\"UID\":") != std::string::npos) {
-            GameObject gameObject;
-            gameObject.setUUID(std::stoi(line.substr(line.find(":") + 1)));
+    size_t gameObjectCount;
+    inFile.read(reinterpret_cast<char*>(&gameObjectCount), sizeof(gameObjectCount));
 
-            std::string name;
-            Transform transform;
-            std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>();
+    for (size_t i = 0; i < gameObjectCount; ++i) {
+        GameObject gameObject;
 
-            // Parse JSON for GameObject properties
-            while (std::getline(inFile, line) && line.find("}") == std::string::npos) {
-                if (line.find("\"Name\":") != std::string::npos) {
-                    name = line.substr(line.find(":") + 2);
-                    name.erase(name.find_last_of("\""));
-                    gameObject.setName(name);
-                }
-                else if (line.find("\"Position\":") != std::string::npos) {
-                    std::istringstream iss(line.substr(line.find("[") + 1));
-                    glm::vec3 pos;
-                    char delim;
-                    iss >> pos.x >> delim >> pos.y >> delim >> pos.z;
-                    transform.translate(pos);
-                }
-                else if (line.find("\"Scale\":") != std::string::npos) {
-                    std::istringstream iss(line.substr(line.find("[") + 1));
-                    glm::vec3 scale;
-                    char delim;
-                    iss >> scale.x >> delim >> scale.y >> delim >> scale.z;
-                    transform.setScale(scale);
-                }
-                else if (line.find("\"Rotation\":") != std::string::npos) {
-                    std::istringstream iss(line.substr(line.find("[") + 1));
-                    glm::vec3 rotation;
-                    char delim;
-                    iss >> rotation.x >> delim >> rotation.y >> delim >> rotation.z;
-                    transform.setRotation(glm::radians(rotation.y), glm::radians(rotation.x), glm::radians(rotation.z));
-                }
-                else if (line.find("\"Mesh\":") != std::string::npos) {
-                    // Parse mesh properties
-                    while (std::getline(inFile, line) && line.find("}") == std::string::npos) {
-                        if (line.find("\"Vertices\":") != std::string::npos) {
-                            std::vector<glm::vec3> vertices;
-                            while (std::getline(inFile, line) && line.find("]") == std::string::npos) {
-                                glm::vec3 vertex;
-                                std::sscanf_s(line.c_str(), " [%f, %f, %f]", &vertex.x, &vertex.y, &vertex.z);
-                                vertices.push_back(vertex);
-                            }
-                            mesh->load(vertices.data(), vertices.size(), nullptr, 0);
-                        }
-                        else if (line.find("\"Indices\":") != std::string::npos) {
-                            std::vector<unsigned int> indices;
-                            while (std::getline(inFile, line) && line.find("]") == std::string::npos) {
-                                unsigned int index;
-                                std::sscanf_s(line.c_str(), " %u", &index);
-                                indices.push_back(index);
-                            }
-                            mesh->load(nullptr, 0, indices.data(), indices.size());
-                        }
-                        else if (line.find("\"TexCoords\":") != std::string::npos) {
-                            std::vector<glm::vec2> texCoords;
-                            while (std::getline(inFile, line) && line.find("]") == std::string::npos) {
-                                glm::vec2 texCoord;
-                                std::sscanf_s(line.c_str(), " [%f, %f]", &texCoord.x, &texCoord.y);
-                                texCoords.push_back(texCoord);
-                            }
-                            mesh->loadTexCoords(texCoords.data(), texCoords.size());
-                        }
-                    }
-                }
+        // Load GameObject name
+        size_t nameLength;
+        inFile.read(reinterpret_cast<char*>(&nameLength), sizeof(nameLength));
+        std::string name(nameLength, '\0');
+        inFile.read(name.data(), nameLength);
+        gameObject.setName(name);
+
+        // Load Transform
+        glm::vec3 position, scale, rotation;
+        inFile.read(reinterpret_cast<char*>(&position), sizeof(position));
+        inFile.read(reinterpret_cast<char*>(&scale), sizeof(scale));
+        inFile.read(reinterpret_cast<char*>(&rotation), sizeof(rotation));
+
+        Transform transform;
+        transform.translate(position);
+        transform.setScale(scale);
+        transform.setRotation(glm::radians(rotation.x), glm::radians(rotation.y), glm::radians(rotation.z));
+
+        // Load Mesh
+        bool hasMesh;
+        inFile.read(reinterpret_cast<char*>(&hasMesh), sizeof(hasMesh));
+        if (hasMesh) {
+            auto mesh = std::make_shared<Mesh>();
+
+            // Load vertices
+            size_t vertexCount;
+            inFile.read(reinterpret_cast<char*>(&vertexCount), sizeof(vertexCount));
+            std::vector<glm::vec3> vertices(vertexCount);
+            inFile.read(reinterpret_cast<char*>(vertices.data()), vertexCount * sizeof(glm::vec3));
+
+            // Load indices
+            size_t indexCount;
+            inFile.read(reinterpret_cast<char*>(&indexCount), sizeof(indexCount));
+            std::vector<unsigned int> indices(indexCount);
+            inFile.read(reinterpret_cast<char*>(indices.data()), indexCount * sizeof(unsigned int));
+
+            // Load texture coordinates
+            size_t texCoordCount;
+            inFile.read(reinterpret_cast<char*>(&texCoordCount), sizeof(texCoordCount));
+            std::vector<glm::vec2> texCoords(texCoordCount);
+            inFile.read(reinterpret_cast<char*>(texCoords.data()), texCoordCount * sizeof(glm::vec2));
+
+            // Load bounding box
+            BoundingBox boundingBox;
+            inFile.read(reinterpret_cast<char*>(&boundingBox), sizeof(BoundingBox));
+
+            mesh->load(vertices.data(), vertices.size(), indices.data(), indices.size());
+            if (!texCoords.empty()) {
+                mesh->loadTexCoords(texCoords.data(), texCoords.size());
             }
 
-            // Assign components and mesh
-            gameObject.AddComponent<TransformComponent>()->transform() = transform;
-            if (mesh->vertices().size() > 0) { // Check if mesh has been loaded
-                gameObject.setMesh(mesh);
-            }
-
-            // Add GameObject to the scene
-            SceneManager::gameObjectsOnScene.push_back(gameObject);
+            // Add Mesh to GameObject
+            gameObject.setMesh(mesh);
         }
+
+        gameObject.AddComponent<TransformComponent>()->transform() = transform;
+        SceneManager::gameObjectsOnScene.push_back(gameObject);
     }
 
     inFile.close();
     Console::Instance().Log("Scene loaded from " + filePath);
 }
+
+
+
 
