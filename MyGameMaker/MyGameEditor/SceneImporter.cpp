@@ -23,21 +23,11 @@ static void decomposeMatrix(const mat4& matrix, vec3& scale, glm::quat& rotation
 	// Extraer traslación
 	translation = vec3(matrix[3]);
 
-	// Extraer escala con control manual para evitar valores cercanos a cero
-	scale = vec3(
-		glm::length(vec3(matrix[0])) > 0.001f ? glm::length(vec3(matrix[0])) : 0.001f,
-		glm::length(vec3(matrix[1])) > 0.001f ? glm::length(vec3(matrix[1])) : 0.001f,
-		glm::length(vec3(matrix[2])) > 0.001f ? glm::length(vec3(matrix[2])) : 0.001f
-	);
-
-	// Remover escala de la matriz para extraer rotación
-	mat4 rotationMatrix = matrix;
-	if (scale.x > 0.001f) rotationMatrix[0] /= scale.x;
-	if (scale.y > 0.001f) rotationMatrix[1] /= scale.y;
-	if (scale.z > 0.001f) rotationMatrix[2] /= scale.z;
-
-	rotation = glm::quat_cast(rotationMatrix);
+	//// Mantener la escala y la rotación sin cambios
+	scale = vec3(1.0f, 1.0f, 1.0f); // Escala neutra
+	rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f); // Rotación identidad
 }
+
 
 bool containsSubstring(const std::string& str, const std::string& substr) {
 	return str.find(substr) != std::string::npos;
@@ -49,7 +39,7 @@ GameObject graphicObjectFromNode(const aiScene& scene, const aiNode& node, const
 	GameObject obj;
 
 	mat4 localMatrix = aiMat4ToMat4(node.mTransformation);
-	//go.GetComponent<TransformComponent>()->transform().SetLocalMatrix(localMatrix);
+	obj.GetComponent<TransformComponent>()->transform().SetLocalMatrix(localMatrix);
 
 	vec3 scale, translation;
 	glm::quat rotation;

@@ -496,8 +496,8 @@ int main(int argc, char* argv[]) {
     testCamera.GetComponent<CameraComponent>()->camera().transform().rotate(glm::radians(180.0), vec3(0, 1, 0));
     //SceneManager::spawnBakerHouse();
 
-	GameObject scene1 = SceneImporter::loadFromFile("Assets/BakerHouse.fbx");
-	GameObject scene2 = SceneImporter::loadFromFile("Assets/strawberry.fbx");
+    //SceneManager::spawnBakerHouse();
+	//GameObject scene2 = SceneImporter::loadFromFile("Assets/strawberry.fbx");
 	//GameObject scene3 = SceneImporter::loadFromFile("Assets/Street environment_V01.fbx");
 	GameObject scene3 = SceneImporter::loadFromFile("Assets/street2.fbx");
 
@@ -539,7 +539,7 @@ int main(int argc, char* argv[]) {
             case SDL_MOUSEBUTTONDOWN:
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     // Raycast para detectar el objeto debajo del mouse
-                    SceneManager::selectedObject = fileDropHandler.raycastFromMouseToGameObject(mouseScreenPos.x, mouseScreenPos.y, projection, view, WINDOW_SIZE);
+                    SceneManager::selectedObject = fileDropHandler.raycastFromMouseToGameObjectBoundingBox(mouseScreenPos.x, mouseScreenPos.y, projection, view, WINDOW_SIZE, testCamera);
                 }
             case SDL_MOUSEBUTTONUP:
                 mouseButton_func(event.button.button, event.button.state, event.button.x, event.button.y);

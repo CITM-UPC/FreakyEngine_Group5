@@ -17,7 +17,7 @@ void FileDropHandler::handleFileDrop(const std::string& filePath, const glm::mat
     int mouseX, mouseY;
     SDL_GetMouseState(&mouseX, &mouseY);
 
-    if (extension == "obj" || extension == "fbx" || extension == "dae") {
+    if (extension == "obj" || extension == "fbx" || extension == "FBX" || extension == "dae") {
 
         auto mesh = std::make_shared<Mesh>();
         mesh = modelImporter.ImportModel(filePath.c_str());
@@ -122,6 +122,34 @@ GameObject* FileDropHandler::raycastFromMouseToGameObject(int mouseX, int mouseY
         // Transformar bounding box del padre al espacio global
         BoundingBox globalBoundingBox = go.worldTransform().mat() * go.localBoundingBox();
         if (intersectRayWithBoundingBox(rayOrigin, rayDirection, globalBoundingBox)) {
+            hitObject = &go;
+
+            // Verificar los hijos en el espacio global
+            for (auto& child : go.children()) {
+                BoundingBox childGlobalBoundingBox = child.worldTransform().mat() * child.localBoundingBox();
+                if (intersectRayWithBoundingBox(rayOrigin, rayDirection, childGlobalBoundingBox)) {
+                    hitObject = &child;
+                    break;
+                }
+            }
+            break;
+        }
+    }
+    return hitObject;
+}
+GameObject* FileDropHandler::raycastFromMouseToGameObjectBoundingBox(int mouseX, int mouseY, const glm::mat4& projection, const glm::mat4& view, const glm::ivec2& viewportSize, GameObject cameraFrustrum)
+{
+    glm::vec3 rayOrigin = glm::vec3(glm::inverse(view) * glm::vec4(0, 0, 0, 1));
+    glm::vec3 rayDirection = getRayFromMouse(mouseX, mouseY, projection, view, viewportSize);
+
+    GameObject* hitObject = nullptr;
+
+    for (auto& go : SceneManager::gameObjectsOnScene) {
+        // Transformar bounding box del padre al espacio global
+        BoundingBox globalBoundingBox = go.worldTransform().mat() * go.localBoundingBox();
+        cameraFrustrum.GetComponent<CameraComponent>()->camera().transform() = cameraFrustrum.GetComponent<TransformComponent>()->transform();
+        auto frustumPlanes = cameraFrustrum.GetComponent<CameraComponent>()->camera().frustumPlanes();
+        if (intersectRayWithBoundingBox(rayOrigin, rayDirection, globalBoundingBox) && frustrumManager.isInsideFrustum(go.boundingBox(), frustumPlanes)) {
             hitObject = &go;
 
             // Verificar los hijos en el espacio global

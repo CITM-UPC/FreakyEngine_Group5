@@ -148,6 +148,7 @@
     <ClCompile Include="BasicShapesManager.cpp" />
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="FileDropHandler.cpp" />
+    <ClCompile Include="FrustrumManager.cpp" />
     <ClCompile Include="ImageImporter.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ModelImporter.cpp" />
@@ -162,6 +163,7 @@
     <ClInclude Include="BasicShapesManager.h" />
     <ClInclude Include="Console.h" />
     <ClInclude Include="FileDropHandler.h" />
+    <ClInclude Include="FrustrumManager.h" />
     <ClInclude Include="ImageImporter.h" />
     <ClInclude Include="ModelImporter.h" />
     <ClInclude Include="MyGui.h" />

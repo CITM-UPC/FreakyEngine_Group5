@@ -10,11 +10,13 @@
 #include "Console.h"
 #include "ModelImporter.h"
 #include "TextureImporter.h"
+#include "FrustrumManager.h"
 
 class FileDropHandler
 {
     ModelImporter modelImporter;
     TextureImporter textureImporter;
+    FrustrumManager frustrumManager;
 public:
     FileDropHandler() = default;
     FileDropHandler(const FileDropHandler&) = delete;
@@ -31,6 +33,7 @@ public:
 
     // Performs a raycast from the mouse position and returns the GameObject hit
     GameObject* raycastFromMouseToGameObject(int mouseX, int mouseY, const glm::mat4& projection, const glm::mat4& view, const glm::ivec2& viewportSize);
+    GameObject* raycastFromMouseToGameObjectBoundingBox(int mouseX, int mouseY, const glm::mat4& projection, const glm::mat4& view, const glm::ivec2& viewportSize, GameObject cameraFrustrum);
 
     void LoadTexture(const std::string& path, GameObject& go);
     // void LoadCustomFile(const std::string& path, GameObject& go);
@@ -39,6 +42,8 @@ public:
     int textureCounter = 0;
     std::string findAvailableName(const std::string& baseName);
     bool isObjectWithNameExists(const std::string& name);
+
+
 private:
     // Helper function to get the file extension from a file path
     std::string getFileExtension(const std::string& filePath);
