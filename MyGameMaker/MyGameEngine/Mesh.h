@@ -34,7 +34,9 @@ class Mesh
 public:
 
 	Mesh();
-
+	Mesh(const Mesh& other);
+		// Copiar todos los miembros necesarios
+	
 	const auto& vertices() const { return _vertices; }
 	const auto& indices() const { return _indices; }
 	const auto& boundingBox() const { return _boundingBox; }

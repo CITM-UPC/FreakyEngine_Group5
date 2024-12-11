@@ -15,7 +15,9 @@ Mesh::Mesh()
 {
 	//_meshLoader = new MeshLoader();
 }
-
+Mesh::Mesh(const Mesh& other) {
+	// Copiar todos los miembros necesarios
+}
 void Mesh::load(const glm::vec3* vertices, size_t num_verts, unsigned int* indices, size_t num_indexs)
 {
 	_vertices.assign(vertices, vertices + num_verts);

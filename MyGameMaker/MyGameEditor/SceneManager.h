@@ -5,6 +5,7 @@
 #include <vector>
 #include "MyGameEngine/GameObject.h"
 #include "SceneImport.h"
+#include "ModelImporter.h"
 class SceneManager
 {
 public:
@@ -14,6 +15,7 @@ public:
 	static void DestroyGameObject(GameObject* go);
 	static void saveScene(const std::string& filePath);
 	static void loadScene(const std::string& filePath);
+	static ModelImporter modelImporter;
 
 public: 
 	static std::vector<GameObject> gameObjectsOnScene;
