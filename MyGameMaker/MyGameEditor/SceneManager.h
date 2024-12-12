@@ -5,6 +5,7 @@
 #include <vector>
 #include "MyGameEngine/GameObject.h"
 #include "ModelImporter.h"
+#include "TextureImporter.h"
 class SceneManager
 {
 public:
@@ -15,6 +16,7 @@ public:
 	static void saveScene(const std::string& filePath);
 	static void loadScene(const std::string& filePath);
 	static ModelImporter modelImporter;
+	static TextureImporter textureImporter;
 
 public:
 	static std::vector<GameObject> gameObjectsOnScene;

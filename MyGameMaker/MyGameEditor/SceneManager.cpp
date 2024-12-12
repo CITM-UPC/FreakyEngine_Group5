@@ -12,6 +12,7 @@
 #include "MyGameEngine/CameraComponent.h"
 #include "MyGameEngine/Camera.h"
 #include <glm/gtc/type_ptr.hpp>
+#include "TextureImporter.h"
 ModelImporter SceneManager::modelImporter;
 
 std::vector<GameObject> SceneManager::gameObjectsOnScene;
@@ -30,7 +31,15 @@ void SceneManager::spawnBakerHouse()
     SceneManager::gameObjectsOnScene.push_back(go);
 }
 
-
+static GLenum formatFromChannels(int channels) {
+    switch (channels) {
+    case 1: return GL_LUMINANCE;
+    case 2: return GL_LUMINANCE_ALPHA;
+    case 3: return GL_RGB;
+    case 4: return GL_RGBA;
+    default: return GL_RGB;
+    }
+}
 void SceneManager::LoadGameObject(const std::string& filePath) {
     auto mesh = std::make_shared<Mesh>();
 
@@ -116,7 +125,30 @@ void saveGameObject(std::ofstream& outFile, const GameObject& gameObject) {
         bool hasMesh = false;
         outFile.write(reinterpret_cast<const char*>(&hasMesh), sizeof(hasMesh));
     }
+    // Save Texture
+    if (gameObject.hasTexture()) {
+        bool hasTexture = true;
+        outFile.write(reinterpret_cast<const char*>(&hasTexture), sizeof(hasTexture));
 
+        const auto& texture = gameObject.texture();
+        int width = texture.imagePtr()->width();
+        int height = texture.imagePtr()->height();
+        int channels = texture.imagePtr()->channels();
+        outFile.write(reinterpret_cast<const char*>(&width), sizeof(width));
+        outFile.write(reinterpret_cast<const char*>(&height), sizeof(height));
+        outFile.write(reinterpret_cast<const char*>(&channels), sizeof(channels));
+
+        // Recuperar los datos de textura desde OpenGL
+        size_t dataSize = width * height * channels;
+        std::vector<unsigned char> rawData(dataSize);
+        texture.bind();  // Asegúrate de que la textura esté activa
+        glGetTexImage(GL_TEXTURE_2D, 0, formatFromChannels(channels), GL_UNSIGNED_BYTE, rawData.data());
+        outFile.write(reinterpret_cast<const char*>(rawData.data()), dataSize);
+    }
+    else {
+        bool hasTexture = false;
+        outFile.write(reinterpret_cast<const char*>(&hasTexture), sizeof(hasTexture));
+    }
     // Save children
     const auto& children = gameObject.children();
     size_t childCount = children.size();
@@ -201,7 +233,23 @@ GameObject loadGameObject(std::ifstream& inFile) {
 
         gameObject.setMesh(mesh);
     }
+    // Load Texture
+    bool hasTexture;
+    inFile.read(reinterpret_cast<char*>(&hasTexture), sizeof(hasTexture));
+    if (hasTexture) {
+        int width, height, channels;
+        inFile.read(reinterpret_cast<char*>(&width), sizeof(width));
+        inFile.read(reinterpret_cast<char*>(&height), sizeof(height));
+        inFile.read(reinterpret_cast<char*>(&channels), sizeof(channels));
 
+        size_t dataSize = width * height * channels;
+        std::vector<unsigned char> data(dataSize);
+        inFile.read(reinterpret_cast<char*>(data.data()), dataSize);
+
+        auto textureImage = std::make_shared<Image>();
+        textureImage->load(width, height, channels, data.data());
+        gameObject.setTextureImage(textureImage);
+    }
     // Load children
     size_t childCount;
     inFile.read(reinterpret_cast<char*>(&childCount), sizeof(childCount));

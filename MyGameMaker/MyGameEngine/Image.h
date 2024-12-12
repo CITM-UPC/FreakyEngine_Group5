@@ -4,6 +4,7 @@
 #include <istream>
 #include <string>
 #include <GL/glew.h>
+#include <vector>
 
 class Image {
 
@@ -17,14 +18,16 @@ public:
 	auto width() const { return _width; }
 	auto height() const { return _height; }
 	auto channels() const { return _channels; }
-
+	std::vector<unsigned char> _data;
 	Image() = default;
 	Image(const Image&) = delete;
 	Image& operator=(const Image&) = delete;
 	Image(Image&& other) noexcept;
 	Image& operator=(Image&& other) noexcept = delete;
 	~Image();
-
+	const unsigned char* data() const {
+		return _data.data();
+	}
 	void bind() const;
 	void load(int width, int height, int channels, const void* data);
 	void loadTexture(const std::string& path);
