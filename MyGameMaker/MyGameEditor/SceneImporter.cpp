@@ -51,8 +51,7 @@ GameObject graphicObjectFromNode(const aiScene& scene, const aiNode& node, const
 	vec3 scale, translation;
 	glm::quat rotation;
 	decomposeMatrix(localMatrix, scale, rotation, translation);
-
-		obj.GetComponent<TransformComponent>()->transform().SetLocalMatrix(localMatrix);
+	obj.GetComponent<TransformComponent>()->transform().SetLocalMatrix(localMatrix);
 	
 
 	obj.name = node.mName.C_Str();
