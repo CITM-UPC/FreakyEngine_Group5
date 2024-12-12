@@ -22,10 +22,18 @@ static mat4 aiMat4ToMat4(const aiMatrix4x4& aiMat) {
 static void decomposeMatrix(const mat4& matrix, vec3& scale, glm::quat& rotation, vec3& translation) {
 	// Extraer traslación
 	translation = vec3(matrix[3]);
-
-	//// Mantener la escala y la rotación sin cambios
-	scale = vec3(1.0f, 1.0f, 1.0f); // Escala neutra
-	rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f); // Rotación identidad
+	// Extraer escala con control manual para evitar valores cercanos a cero
+	scale = vec3(
+		glm::length(vec3(matrix[0])) > 0.001f ? glm::length(vec3(matrix[0])) : 0.001f,
+		glm::length(vec3(matrix[1])) > 0.001f ? glm::length(vec3(matrix[1])) : 0.001f,
+		glm::length(vec3(matrix[2])) > 0.001f ? glm::length(vec3(matrix[2])) : 0.001f
+	);
+	// Remover escala de la matriz para extraer rotación
+	mat4 rotationMatrix = matrix;
+	if (scale.x > 0.001f) rotationMatrix[0] /= scale.x;
+	if (scale.y > 0.001f) rotationMatrix[1] /= scale.y;
+	if (scale.z > 0.001f) rotationMatrix[2] /= scale.z;
+	rotation = glm::quat_cast(rotationMatrix);
 }
 
 
@@ -34,17 +42,17 @@ bool containsSubstring(const std::string& str, const std::string& substr) {
 }
 
 
-GameObject graphicObjectFromNode(const aiScene& scene, const aiNode& node, const vector<shared_ptr<Mesh>>& meshes, const vector<shared_ptr<Material>>& materials) {
+GameObject graphicObjectFromNode(const aiScene& scene, const aiNode& node, const vector<shared_ptr<Mesh>>& meshes, const vector<shared_ptr<Material>>& materials, bool isFromStreet2) {
 	
 	GameObject obj;
 
 	mat4 localMatrix = aiMat4ToMat4(node.mTransformation);
-	obj.GetComponent<TransformComponent>()->transform().SetLocalMatrix(localMatrix);
 
 	vec3 scale, translation;
 	glm::quat rotation;
 	decomposeMatrix(localMatrix, scale, rotation, translation);
 
+		obj.GetComponent<TransformComponent>()->transform().SetLocalMatrix(localMatrix);
 	
 
 	obj.name = node.mName.C_Str();
@@ -56,7 +64,10 @@ GameObject graphicObjectFromNode(const aiScene& scene, const aiNode& node, const
 	else if (!containsSubstring(obj.name, "$AssimpFbx$"))
 	{
 		obj.GetComponent<TransformComponent>()->transform().setPos(_translation.x, _translation.y, _translation.z);
-		obj.GetComponent<TransformComponent>()->transform().rotate(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		if (isFromStreet2) {
+			//obj.GetComponent<TransformComponent>()->transform().setRotation(-90.0f, 0.0f, 0.0f);
+			obj.GetComponent<TransformComponent>()->transform().rotate(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		}
 		_translation = vec3(0.0f);
 	}
 
@@ -67,13 +78,13 @@ GameObject graphicObjectFromNode(const aiScene& scene, const aiNode& node, const
 		obj.setMesh(mesh);
 		obj.texture() = material->texture;
 		obj.setTextureImage(material->texture.imagePtr());
-		//go.SetColor(material->color);
+		//obj.SetColor(material->color);
 		SceneManager::gameObjectsOnScene.push_back(obj);
 
 	}
 
 	for (unsigned int i = 0; i < node.mNumChildren; ++i) {
-		graphicObjectFromNode(scene, *node.mChildren[i], meshes, materials);
+		graphicObjectFromNode(scene, *node.mChildren[i], meshes, materials, isFromStreet2);
 	}
 
 	return obj;
@@ -155,7 +166,15 @@ GameObject SceneImporter::loadFromFile(const std::string& path) {
 	const aiScene* fbx_scene = aiImportFile(path.c_str(), aiProcess_Triangulate | aiProcess_SortByPType | aiProcess_JoinIdenticalVertices | aiProcess_GenUVCoords | aiProcess_TransformUVCoords | aiProcess_FlipUVs);
 	const auto meshes = createMeshesFromFBX(*fbx_scene);
 	const auto materials = createMaterialsFromFBX(*fbx_scene, fs::absolute(path).parent_path());
-	GameObject fbx_obj = graphicObjectFromNode(*fbx_scene, *fbx_scene->mRootNode, meshes, materials);
+	GameObject fbx_obj;
+	if (path == "Assets/street2.fbx") {
+		 fbx_obj = graphicObjectFromNode(*fbx_scene, *fbx_scene->mRootNode, meshes, materials, true);
+	}
+	else {
+		fbx_obj = graphicObjectFromNode(*fbx_scene, *fbx_scene->mRootNode, meshes, materials,false);
+
+	}
+	
 	aiReleaseImport(fbx_scene);
 	//for (int i = 0; i < meshImporter.meshGameObjects.size(); i++)
 	//{

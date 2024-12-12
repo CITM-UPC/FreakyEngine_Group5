@@ -81,6 +81,14 @@ void GameObject::draw() const {
     glMultMatrixd(GetComponent<TransformComponent>()->transform().data());
     glColor3ubv(&_color.r);
 
+    if (_material_ptr) {
+        glColor4ubv(&_material_ptr->color.r);
+        if (_material_ptr->texture.id()) {
+            glEnable(GL_TEXTURE_2D);
+            _material_ptr->texture.bind();
+        }
+    }
+
     if (hasTexture()) {
         glEnable(GL_TEXTURE_2D);
 
@@ -101,6 +109,7 @@ void GameObject::draw() const {
     if (hasMesh()) _mesh_ptr->draw();
 
     if (hasTexture()) glDisable(GL_TEXTURE_2D);
+    if (_material_ptr && _material_ptr->texture.id()) glDisable(GL_TEXTURE_2D);
 
    
     for (const auto& child : children()) {

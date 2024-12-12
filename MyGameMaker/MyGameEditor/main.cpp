@@ -496,10 +496,10 @@ int main(int argc, char* argv[]) {
     testCamera.GetComponent<CameraComponent>()->camera().transform().rotate(glm::radians(180.0), vec3(0, 1, 0));
     //SceneManager::spawnBakerHouse();
 
-    SceneManager::spawnBakerHouse();
-	//GameObject scene2 = SceneImporter::loadFromFile("Assets/strawberry.fbx");
+    //SceneManager::spawnBakerHouse();
+	//GameObject scene2 = SceneImporter::loadFromFile("Assets/Bakerhouse.fbx");
 	//GameObject scene3 = SceneImporter::loadFromFile("Assets/Street environment_V01.fbx");
-	//GameObject scene3 = SceneImporter::loadFromFile("Assets/street2.fbx");
+	GameObject scene3 = SceneImporter::loadFromFile("Assets/street2.fbx");
 
     while (window.isOpen()) {
         const auto t0 = hrclock::now();

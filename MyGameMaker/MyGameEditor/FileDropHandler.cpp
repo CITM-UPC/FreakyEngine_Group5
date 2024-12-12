@@ -25,8 +25,9 @@ void FileDropHandler::handleFileDrop(const std::string& filePath, const glm::mat
         freakCounter++;
 
         SceneManager::LoadGameObject(filePath);
-        SceneManager::getGameObject(SceneManager::gameObjectsOnScene.size() - 1)->transform().pos() =
-            screenToWorld(glm::vec2(mouseX, mouseY), 10.0f, projection, view);
+       /* SceneManager::getGameObject(SceneManager::gameObjectsOnScene.size() - 1)->transform().pos() =
+            screenToWorld(glm::vec2(mouseX, mouseY), 10.0f, projection, view);*/
+        
         SceneManager::selectedObject = &SceneManager::gameObjectsOnScene.back();
     }
     else if (extension == "png" || extension == "jpg" || extension == "bmp") {
