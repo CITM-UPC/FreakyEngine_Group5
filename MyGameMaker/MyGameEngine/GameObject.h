@@ -40,6 +40,10 @@ private:
     mutable std::type_index cachedComponentType;
     mutable std::shared_ptr<Component> cachedComponent;
 public:
+    void setTexture(const Texture& texture) {
+        _texture = texture;
+    }
+
     int id = 0;
     std::string modelPath;
 
