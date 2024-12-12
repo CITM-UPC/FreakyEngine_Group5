@@ -15,6 +15,7 @@
 #include "TransformComponent.h"
 #include <GL/glew.h>
 #include "Camera.h"
+#include "Material.h"
 
 
 
@@ -25,6 +26,7 @@ private:
     glm::u8vec3 _color = glm::u8vec3(255, 255, 255); // Color del objeto
     Texture _texture;                           // Textura del objeto
     std::shared_ptr<Mesh> _mesh_ptr;           // Puntero a la malla
+    std::shared_ptr<Material> _material_ptr;        // Puntero a la malla
     //std::vector<std::shared_ptr<Component>> _components; // Lista de componentes
     bool _active = true;                        // Estado de activación
    
@@ -77,6 +79,9 @@ public:
     const auto& transform() const { return GetComponent<TransformComponent>()->transform(); }
     auto& transform() { return GetComponent<TransformComponent>()->transform(); }
 
+    void setMaterial(std::shared_ptr<Material> material) { this->_material_ptr = material; }
+    std::shared_ptr<Material> material() const { return _material_ptr; }
+
     const auto& color() const { return _color; }
     auto& color() { return _color; }
 
@@ -89,11 +94,6 @@ public:
 
     const std::string& getName() const { return name; }
     void setName(const std::string& newName) { name = newName; }
-
-    // Gestión de componentes
-    //void addComponent(std::shared_ptr<Component> component);
-    //void removeComponent(std::shared_ptr<Component> component);
-    //std::vector<std::shared_ptr<Component>> getComponents() const;
 
     // Transformación global del objeto
     Transform worldTransform() const { return isRoot() ? GetComponent<TransformComponent>()->transform() : parent().worldTransform() * GetComponent<TransformComponent>()->transform(); }
@@ -114,12 +114,6 @@ public:
 
     // Método para dibujar el objeto
     void draw() const; // Definir en el .cpp
-
-    // Métodos de ciclo de vida
-    //virtual void awake();      // Inicialización
-    //virtual void start();      // Llamado al inicio
-    //virtual void update(float deltaTime); // Lógica de actualización
-    //virtual void onDestroy();  // Limpieza antes de eliminar el objeto
 
     // Activación del objeto
     void setActive(bool active) { _active = active; }

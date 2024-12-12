@@ -12,7 +12,6 @@
 #include <chrono>
 #include <thread>
 #include <vector>
-#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 
@@ -43,6 +42,7 @@ SDL_Event event;
 bool rightMouseButtonDown = false;
 int lastMouseX, lastMouseY;
 FileDropHandler fileDropHandler;
+FrustrumManager frustrumManager;
 // Initialization de OpenGL
 void initOpenGL() {
     glewInit();
@@ -57,119 +57,6 @@ glm::vec2 getMousePosition() {
     SDL_GetMouseState(&x, &y);
     return glm::vec2(static_cast<float>(x), static_cast<float>(y));
 }
-
-////Funcion para convertir de coordenadas de pantalla a coordenadas del mundo
-//glm::vec3 screenToWorld(const glm::vec2& mousePos, float depth, const glm::mat4& projection, const glm::mat4& view) {
-//
-//    float x = (2.0f * mousePos.x) / WINDOW_SIZE.x - 1.0f;
-//    float y = 1.0f - (2.0f * mousePos.y) / WINDOW_SIZE.y;  
-//    glm::vec4 clipCoords(x, y, -1.0f, 1.0f); 
-//
-//
-//    glm::vec4 eyeCoords = glm::inverse(projection) * clipCoords;
-//    eyeCoords = glm::vec4(eyeCoords.x, eyeCoords.y, -1.0f, 0.0f);
-//
-//
-//    glm::vec3 worldRay = glm::vec3(glm::inverse(view) * eyeCoords);
-//    worldRay = glm::normalize(worldRay);
-//
-//
-//    glm::vec3 cameraPosition = glm::vec3(glm::inverse(view)[3]); 
-//    return cameraPosition + worldRay * depth;
-//}
-
-
-
-////RayCastFunctions
-//glm::vec3 getRayFromMouse(int mouseX, int mouseY, const glm::mat4& projection, const glm::mat4& view, const glm::ivec2& viewportSize) {
-//    float x = (2.0f * mouseX) / viewportSize.x - 1.0f;
-//    float y = 1.0f - (2.0f * mouseY) / viewportSize.y;
-//    glm::vec4 rayClip = glm::vec4(x, y, -1.0f, 1.0f);
-//
-//    glm::vec4 rayEye = glm::inverse(projection) * rayClip;
-//    rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
-//
-//    glm::vec3 rayWorld = glm::normalize(glm::vec3(glm::inverse(view) * rayEye));
-//    return rayWorld;
-//}
-//
-//
-//bool intersectRayWithBoundingBox(const glm::vec3& rayOrigin, const glm::vec3& rayDirection, const BoundingBox& bbox) {
-//    float tmin = (bbox.min.x - rayOrigin.x) / rayDirection.x;
-//    float tmax = (bbox.max.x - rayOrigin.x) / rayDirection.x;
-//
-//    if (tmin > tmax) std::swap(tmin, tmax);
-//
-//    float tymin = (bbox.min.y - rayOrigin.y) / rayDirection.y;
-//    float tymax = (bbox.max.y - rayOrigin.y) / rayDirection.y;
-//
-//    if (tymin > tymax) std::swap(tymin, tymax);
-//
-//    if ((tmin > tymax) || (tymin > tmax)) {
-//        return false;
-//    }
-//
-//    if (tymin > tmin) tmin = tymin;
-//    if (tymax < tmax) tmax = tymax;
-//
-//    float tzmin = (bbox.min.z - rayOrigin.z) / rayDirection.z;
-//    float tzmax = (bbox.max.z - rayOrigin.z) / rayDirection.z;
-//
-//    if (tzmin > tzmax) std::swap(tzmin, tzmax);
-//
-//    if ((tmin > tzmax) || (tzmin > tmax)) {
-//        return false;
-//    }
-//
-//    if (tzmin > tmin) tmin = tzmin;
-//    if (tzmax < tmax) tmax = tzmax;
-//
-//    return tmin >= 0.0f;
-//}
-//// Raycast desde el mouse para detectar si está sobre un GameObject
-//GameObject* raycastFromMouseToGameObject(int mouseX, int mouseY, const glm::mat4& projection, const glm::mat4& view, const glm::ivec2& viewportSize) {
-//    glm::vec3 rayOrigin = glm::vec3(glm::inverse(view) * glm::vec4(0, 0, 0, 1));
-//    glm::vec3 rayDirection = getRayFromMouse(mouseX, mouseY, projection, view, viewportSize);
-//
-//    GameObject* hitObject = nullptr;
-//
-//    for (auto& go : SceneManager::gameObjectsOnScene) {
-//        // Transformar bounding box del padre al espacio global
-//        BoundingBox globalBoundingBox = go.worldTransform().mat() * go.localBoundingBox();
-//        if (intersectRayWithBoundingBox(rayOrigin, rayDirection, globalBoundingBox)) {
-//            hitObject = &go;
-//
-//            // Verificar los hijos en el espacio global
-//            for (auto& child : go.children()) {
-//                BoundingBox childGlobalBoundingBox = child.worldTransform().mat() * child.localBoundingBox();
-//                if (intersectRayWithBoundingBox(rayOrigin, rayDirection, childGlobalBoundingBox)) {
-//                    hitObject = &child;
-//                    break;
-//                }
-//            }
-//            break;
-//        }
-//    }
-//    return hitObject;
-//}
-//
-//
-//
-////File drop handler
-//std::string getFileExtension(const std::string& filePath) {
-//    // Find the last dot in the file path
-//    size_t dotPosition = filePath.rfind('.');
-//
-//    // If no dot is found, return an empty string
-//    if (dotPosition == std::string::npos) {
-//        return "";
-//    }
-//
-//    // Extract and return the file extension
-//    return filePath.substr(dotPosition + 1);
-//}
-
-
 
 //Renderizado del suelo
 static void drawFloorGrid(int size, double step) {
@@ -213,60 +100,18 @@ void configureCamera() {
     glMatrixMode(GL_MODELVIEW);
     glLoadMatrixd(glm::value_ptr(viewMatrix));
 }
-void drawFrustum(const GameObject& camera) {
-    //auto planes = camera.frustumPlanes();
-	auto planes = camera.GetComponent<CameraComponent>()->camera().frustumPlanes();
-    std::vector<glm::vec3> frustumCorners = {
-        glm::vec3(-1, -1, -1), glm::vec3(1, -1, -1),
-        glm::vec3(1, 1, -1), glm::vec3(-1, 1, -1),
-        glm::vec3(-1, -1, 1), glm::vec3(1, -1, 1),
-        glm::vec3(1, 1, 1), glm::vec3(-1, 1, 1)
-    };
-
-    glm::mat4 invProjView = glm::inverse(camera.GetComponent<CameraComponent>()->camera().projection() * camera.GetComponent<CameraComponent>()->camera().view());
-    for (auto& corner : frustumCorners) {
-        glm::vec4 transformedCorner = invProjView * glm::vec4(corner, 1.0f);
-        corner = glm::vec3(transformedCorner) / transformedCorner.w;
-    }
-
-    glBegin(GL_LINES);
-    for (int i = 0; i < 4; ++i) {
-        glVertex3fv(glm::value_ptr(frustumCorners[i]));
-        glVertex3fv(glm::value_ptr(frustumCorners[(i + 1) % 4]));
-        glVertex3fv(glm::value_ptr(frustumCorners[i + 4]));
-        glVertex3fv(glm::value_ptr(frustumCorners[(i + 1) % 4 + 4]));
-        glVertex3fv(glm::value_ptr(frustumCorners[i]));
-        glVertex3fv(glm::value_ptr(frustumCorners[i + 4]));
-    }
-    glEnd();
-}
-bool isInsideFrustum(const BoundingBox& bbox, const std::list<Plane>& frustumPlanes) {
-    for (const auto& plane : frustumPlanes) {
-        if (plane.distance(bbox.v000()) < 0 &&
-            plane.distance(bbox.v001()) < 0 &&
-            plane.distance(bbox.v010()) < 0 &&
-            plane.distance(bbox.v011()) < 0 &&
-            plane.distance(bbox.v100()) < 0 &&
-            plane.distance(bbox.v101()) < 0 &&
-            plane.distance(bbox.v110()) < 0 &&
-            plane.distance(bbox.v111()) < 0) {
-            return false;
-        }
-    }
-    return true;
-}
 // Función de renderizado
 void display_func() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     configureCamera();
-	drawFrustum(testCamera); // Dibujar el frustum de la cámara de prueba (testCamera
+	frustrumManager.drawFrustum(testCamera); 
     testCamera.GetComponent<CameraComponent>()->camera().transform() = testCamera.GetComponent<TransformComponent>()->transform();
     auto frustumPlanes = testCamera.GetComponent<CameraComponent>()->camera().frustumPlanes();
     
     for (auto& go : SceneManager::gameObjectsOnScene) {
         if (go.isRoot()) { // Solo objetos raíz
             // Verificar si el objeto está dentro del frustum
-            if (isInsideFrustum(go.boundingBox(), frustumPlanes)) {
+            if (frustrumManager.isInsideFrustum(go.boundingBox(), frustumPlanes)) {
                 // Dibuja el objeto raíz (y sus hijos automáticamente desde GameObject::draw)
                 go.draw();
                 drawBoundingBox(go.boundingBox());

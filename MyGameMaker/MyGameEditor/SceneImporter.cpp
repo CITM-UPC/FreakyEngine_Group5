@@ -51,7 +51,7 @@ GameObject graphicObjectFromNode(const aiScene& scene, const aiNode& node, const
 	vec3 scale, translation;
 	glm::quat rotation;
 	decomposeMatrix(localMatrix, scale, rotation, translation);
-	obj.GetComponent<TransformComponent>()->transform().SetLocalMatrix(localMatrix);
+	//obj.GetComponent<TransformComponent>()->transform().SetLocalMatrix(localMatrix);
 	
 
 	obj.name = node.mName.C_Str();
@@ -59,6 +59,9 @@ GameObject graphicObjectFromNode(const aiScene& scene, const aiNode& node, const
 	if (containsSubstring(obj.name, "$AssimpFbx$_Translation"))
 	{
 		_translation = translation;
+		/*if (isFromStreet2) {
+			obj.GetComponent<TransformComponent>()->transform().rotate(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		}*/
 	}
 	else if (!containsSubstring(obj.name, "$AssimpFbx$"))
 	{
@@ -77,6 +80,7 @@ GameObject graphicObjectFromNode(const aiScene& scene, const aiNode& node, const
 		obj.setMesh(mesh);
 		obj.texture() = material->texture;
 		obj.setTextureImage(material->texture.imagePtr());
+		obj.setMaterial(material);
 		//obj.SetColor(material->color);
 		SceneManager::gameObjectsOnScene.push_back(obj);
 
@@ -173,22 +177,7 @@ GameObject SceneImporter::loadFromFile(const std::string& path) {
 		fbx_obj = graphicObjectFromNode(*fbx_scene, *fbx_scene->mRootNode, meshes, materials,false);
 
 	}
-	
 	aiReleaseImport(fbx_scene);
-	//for (int i = 0; i < meshImporter.meshGameObjects.size(); i++)
-	//{
-	//	auto gameObject = meshImporter.meshGameObjects[i];
-	//	scene.emplaceChild(*gameObject);
-
-	//}
-	//std::string nameFile = getFileNameWithoutExtension(path);
-	//const std::string finalPath = "Library/Meshes/" + nameFile + ".mesh";
-	//meshImporter.SaveMeshToFile(meshImporter.meshGameObjects, finalPath.c_str());
-	//go.meshPath = path;
-
-	//// Set ID
-	//int newID = scene.children().back().id;
-	//go.id = newID + 1;
 	return fbx_obj;
 }
 
