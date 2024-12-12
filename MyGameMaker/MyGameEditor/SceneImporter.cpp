@@ -12,6 +12,7 @@
 using namespace std;
 namespace fs = std::filesystem;
 vec3 _translation = vec3(0.0f);	
+glm::quat _rotation;
 
 static mat4 aiMat4ToMat4(const aiMatrix4x4& aiMat) {
 	mat4 mat;
@@ -41,36 +42,72 @@ bool containsSubstring(const std::string& str, const std::string& substr) {
 	return str.find(substr) != std::string::npos;
 }
 
+static mat4 adjustFBXRotation(const mat4& matrix) {
+	// Rotar el sistema de coordenadas del FBX para ajustarlo
+	mat4 adjustment = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	return adjustment * matrix;
+}
+
+static glm::vec3 quaternionToEuler(const glm::quat& q) {
+	glm::vec3 euler;
+
+	// Roll (X-axis rotation)
+	float sinr_cosp = 2 * (q.w * q.x + q.y * q.z);
+	float cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y);
+	euler.x = glm::atan(sinr_cosp, cosr_cosp);
+
+	// Pitch (Y-axis rotation)
+	float sinp = 2 * (q.w * q.y - q.z * q.x);
+	if (std::abs(sinp) >= 1)
+		euler.y = std::copysign(glm::half_pi<float>(), sinp); // Clamp to ±90 degrees
+	else
+		euler.y = glm::asin(sinp);
+
+	// Yaw (Z-axis rotation)
+	float siny_cosp = 2 * (q.w * q.z + q.x * q.y);
+	float cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
+	euler.z = glm::atan(siny_cosp, cosy_cosp);
+
+	return euler;
+}
+
 
 GameObject graphicObjectFromNode(const aiScene& scene, const aiNode& node, const vector<shared_ptr<Mesh>>& meshes, const vector<shared_ptr<Material>>& materials, bool isFromStreet2) {
-	
 	GameObject obj;
 
 	mat4 localMatrix = aiMat4ToMat4(node.mTransformation);
+	if (isFromStreet2) {
+		//localMatrix = adjustFBXRotation(localMatrix);
+	}
 
 	vec3 scale, translation;
 	glm::quat rotation;
 	decomposeMatrix(localMatrix, scale, rotation, translation);
-	//obj.GetComponent<TransformComponent>()->transform().SetLocalMatrix(localMatrix);
-	
+
+	// Convert quaternion to Euler angles
+	glm::vec3 euler = quaternionToEuler(rotation);
+	float pitch = glm::degrees(euler.x);
+	float yaw = glm::degrees(euler.y);
+	float roll = glm::degrees(euler.z);
 
 	obj.name = node.mName.C_Str();
 
-	if (containsSubstring(obj.name, "$AssimpFbx$_Translation"))
-	{
+	if (containsSubstring(obj.name, "$AssimpFbx$_Translation")) {
 		_translation = translation;
-		/*if (isFromStreet2) {
-			obj.GetComponent<TransformComponent>()->transform().rotate(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		}*/
 	}
-	else if (!containsSubstring(obj.name, "$AssimpFbx$"))
-	{
+	if (containsSubstring(obj.name, "$AssimpFbx$_Rotation")) {
+		_rotation = rotation;
+	}
+	if (!containsSubstring(obj.name, "$AssimpFbx$")) {
 		obj.GetComponent<TransformComponent>()->transform().setPos(_translation.x, _translation.y, _translation.z);
+		//obj.GetComponent<TransformComponent>()->transform().setRotation(pitch, yaw, roll);
+
 		if (isFromStreet2) {
-			//obj.GetComponent<TransformComponent>()->transform().setRotation(-90.0f, 0.0f, 0.0f);
 			obj.GetComponent<TransformComponent>()->transform().rotate(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		}
+
 		_translation = vec3(0.0f);
+		_rotation = glm::quat();
 	}
 
 	for (unsigned int i = 0; i < node.mNumMeshes; ++i) {
@@ -81,9 +118,7 @@ GameObject graphicObjectFromNode(const aiScene& scene, const aiNode& node, const
 		obj.texture() = material->texture;
 		obj.setTextureImage(material->texture.imagePtr());
 		obj.setMaterial(material);
-		//obj.SetColor(material->color);
 		SceneManager::gameObjectsOnScene.push_back(obj);
-
 	}
 
 	for (unsigned int i = 0; i < node.mNumChildren; ++i) {

@@ -342,9 +342,9 @@ int main(int argc, char* argv[]) {
     //SceneManager::spawnBakerHouse();
 
     //SceneManager::spawnBakerHouse();
-	//GameObject scene2 = SceneImporter::loadFromFile("Assets/Bakerhouse.fbx");
+	GameObject scene2 = SceneImporter::loadFromFile("Assets/strawberry.fbx");
 	//GameObject scene3 = SceneImporter::loadFromFile("Assets/Street environment_V01.fbx");
-	GameObject scene3 = SceneImporter::loadFromFile("Assets/street2.fbx");
+	//GameObject scene3 = SceneImporter::loadFromFile("Assets/street2.fbx");
 
     while (window.isOpen()) {
         const auto t0 = hrclock::now();

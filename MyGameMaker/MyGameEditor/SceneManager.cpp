@@ -68,6 +68,64 @@ void SceneManager::DestroyGameObject(GameObject* go) {
         Console::Instance().Log("Object not found");
     }
 }
+void saveGameObject(std::ofstream& outFile, const GameObject& gameObject) {
+    // Save GameObject name
+    const std::string& name = gameObject.getName();
+    size_t nameLength = name.size();
+    outFile.write(reinterpret_cast<const char*>(&nameLength), sizeof(nameLength));
+    outFile.write(name.data(), nameLength);
+
+    // Save Transform
+    const auto& transform = gameObject.GetComponent<TransformComponent>()->transform();
+    glm::vec3 position = transform.pos();
+    glm::vec3 scale = transform.extractScale(transform.mat());
+    glm::vec3 rotation = transform.extractEulerAngles(transform.mat());
+    outFile.write(reinterpret_cast<const char*>(&position), sizeof(position));
+    outFile.write(reinterpret_cast<const char*>(&scale), sizeof(scale));
+    outFile.write(reinterpret_cast<const char*>(&rotation), sizeof(rotation));
+
+    // Save Mesh
+    if (gameObject.hasMesh()) {
+        const auto& mesh = gameObject.getMeshPtr();
+        bool hasMesh = true;
+        outFile.write(reinterpret_cast<const char*>(&hasMesh), sizeof(hasMesh));
+
+        // Save vertices
+        const auto& vertices = mesh->vertices();
+        size_t vertexCount = vertices.size();
+        outFile.write(reinterpret_cast<const char*>(&vertexCount), sizeof(vertexCount));
+        outFile.write(reinterpret_cast<const char*>(vertices.data()), vertexCount * sizeof(glm::vec3));
+
+        // Save indices
+        const auto& indices = mesh->indices();
+        size_t indexCount = indices.size();
+        outFile.write(reinterpret_cast<const char*>(&indexCount), sizeof(indexCount));
+        outFile.write(reinterpret_cast<const char*>(indices.data()), indexCount * sizeof(unsigned int));
+
+        // Save texture coordinates
+        const auto& texCoords = mesh->texCoords();
+        size_t texCoordCount = texCoords.size();
+        outFile.write(reinterpret_cast<const char*>(&texCoordCount), sizeof(texCoordCount));
+        outFile.write(reinterpret_cast<const char*>(texCoords.data()), texCoordCount * sizeof(glm::vec2));
+
+        // Save bounding box
+        const auto& boundingBox = mesh->boundingBox();
+        outFile.write(reinterpret_cast<const char*>(&boundingBox), sizeof(BoundingBox));
+    }
+    else {
+        bool hasMesh = false;
+        outFile.write(reinterpret_cast<const char*>(&hasMesh), sizeof(hasMesh));
+    }
+
+    // Save children
+    const auto& children = gameObject.children();
+    size_t childCount = children.size();
+    outFile.write(reinterpret_cast<const char*>(&childCount), sizeof(childCount));
+    for (const auto& child : children) {
+        saveGameObject(outFile, child);
+    }
+}
+
 void SceneManager::saveScene(const std::string& filePath) {
     std::ofstream outFile(filePath, std::ios::binary);
     if (!outFile) {
@@ -79,64 +137,80 @@ void SceneManager::saveScene(const std::string& filePath) {
     outFile.write(reinterpret_cast<const char*>(&gameObjectCount), sizeof(gameObjectCount));
 
     for (const auto& gameObject : SceneManager::gameObjectsOnScene) {
-        // Save GameObject name
-        const std::string& name = gameObject.getName();
-        size_t nameLength = name.size();
-        outFile.write(reinterpret_cast<const char*>(&nameLength), sizeof(nameLength));
-        outFile.write(name.data(), nameLength);
-
-        //// Guardar el componente de la cámara si existe
-        //if (gameObject.HasComponent<CameraComponent>()) {
-        //    std::shared_ptr<CameraComponent> cameraComponent = gameObject.GetComponent<CameraComponent>();
-        //    // Guardar los parámetros relevantes de la cámara (puedes agregar más datos aquí)
-        //    auto frustumPlanes = cameraComponent->camera().frustumPlanes();
-        //    outFile.write(reinterpret_cast<const char*>(&frustumPlanes), sizeof(frustumPlanes));
-        //}
-        // Save Transform
-        const auto& transform = gameObject.GetComponent<TransformComponent>()->transform();
-        glm::vec3 position = transform.pos();
-        glm::vec3 scale = transform.extractScale(transform.mat());
-        glm::vec3 rotation = transform.extractEulerAngles(transform.mat());
-        outFile.write(reinterpret_cast<const char*>(&position), sizeof(position));
-        outFile.write(reinterpret_cast<const char*>(&scale), sizeof(scale));
-        outFile.write(reinterpret_cast<const char*>(&rotation), sizeof(rotation));
-
-        // Save Mesh
-        if (gameObject.hasMesh()) {
-            const auto& mesh = gameObject.getMeshPtr();
-            bool hasMesh = true;
-            outFile.write(reinterpret_cast<const char*>(&hasMesh), sizeof(hasMesh));
-
-            // Save vertices
-            const auto& vertices = mesh->vertices();
-            size_t vertexCount = vertices.size();
-            outFile.write(reinterpret_cast<const char*>(&vertexCount), sizeof(vertexCount));
-            outFile.write(reinterpret_cast<const char*>(vertices.data()), vertexCount * sizeof(glm::vec3));
-
-            // Save indices
-            const auto& indices = mesh->indices();
-            size_t indexCount = indices.size();
-            outFile.write(reinterpret_cast<const char*>(&indexCount), sizeof(indexCount));
-            outFile.write(reinterpret_cast<const char*>(indices.data()), indexCount * sizeof(unsigned int));
-
-            // Save texture coordinates
-            const auto& texCoords = mesh->texCoords();
-            size_t texCoordCount = texCoords.size();
-            outFile.write(reinterpret_cast<const char*>(&texCoordCount), sizeof(texCoordCount));
-            outFile.write(reinterpret_cast<const char*>(texCoords.data()), texCoordCount * sizeof(glm::vec2));
-
-            // Save bounding box
-            const auto& boundingBox = mesh->boundingBox();
-            outFile.write(reinterpret_cast<const char*>(&boundingBox), sizeof(BoundingBox));
-        }
-        else {
-            bool hasMesh = false;
-            outFile.write(reinterpret_cast<const char*>(&hasMesh), sizeof(hasMesh));
-        }
+        saveGameObject(outFile, gameObject);
     }
 
     outFile.close();
     Console::Instance().Log("Scene saved to " + filePath);
+}
+GameObject loadGameObject(std::ifstream& inFile) {
+    GameObject gameObject;
+
+    // Load GameObject name
+    size_t nameLength;
+    inFile.read(reinterpret_cast<char*>(&nameLength), sizeof(nameLength));
+    std::string name(nameLength, '\0');
+    inFile.read(name.data(), nameLength);
+    gameObject.setName(name);
+
+    // Load Transform
+    glm::vec3 position, scale, rotation;
+    inFile.read(reinterpret_cast<char*>(&position), sizeof(position));
+    inFile.read(reinterpret_cast<char*>(&scale), sizeof(scale));
+    inFile.read(reinterpret_cast<char*>(&rotation), sizeof(rotation));
+
+    Transform transform;
+    transform.translate(position);
+    transform.setScale(scale);
+    transform.setRotation(glm::radians(rotation.x), glm::radians(rotation.y), glm::radians(rotation.z));
+
+    gameObject.AddComponent<TransformComponent>()->transform() = transform;
+
+    // Load Mesh
+    bool hasMesh;
+    inFile.read(reinterpret_cast<char*>(&hasMesh), sizeof(hasMesh));
+    if (hasMesh) {
+        auto mesh = std::make_shared<Mesh>();
+
+        // Load vertices
+        size_t vertexCount;
+        inFile.read(reinterpret_cast<char*>(&vertexCount), sizeof(vertexCount));
+        std::vector<glm::vec3> vertices(vertexCount);
+        inFile.read(reinterpret_cast<char*>(vertices.data()), vertexCount * sizeof(glm::vec3));
+
+        // Load indices
+        size_t indexCount;
+        inFile.read(reinterpret_cast<char*>(&indexCount), sizeof(indexCount));
+        std::vector<unsigned int> indices(indexCount);
+        inFile.read(reinterpret_cast<char*>(indices.data()), indexCount * sizeof(unsigned int));
+
+        // Load texture coordinates
+        size_t texCoordCount;
+        inFile.read(reinterpret_cast<char*>(&texCoordCount), sizeof(texCoordCount));
+        std::vector<glm::vec2> texCoords(texCoordCount);
+        inFile.read(reinterpret_cast<char*>(texCoords.data()), texCoordCount * sizeof(glm::vec2));
+
+        // Load bounding box
+        BoundingBox boundingBox;
+        inFile.read(reinterpret_cast<char*>(&boundingBox), sizeof(BoundingBox));
+
+        mesh->load(vertices.data(), vertices.size(), indices.data(), indices.size());
+        if (!texCoords.empty()) {
+            mesh->loadTexCoords(texCoords.data(), texCoords.size());
+        }
+
+        gameObject.setMesh(mesh);
+    }
+
+    // Load children
+    size_t childCount;
+    inFile.read(reinterpret_cast<char*>(&childCount), sizeof(childCount));
+    for (size_t i = 0; i < childCount; ++i) {
+        auto child = loadGameObject(inFile);
+        gameObject.emplaceChild(child);
+    }
+
+    return gameObject;
 }
 
 void SceneManager::loadScene(const std::string& filePath) {
@@ -152,93 +226,10 @@ void SceneManager::loadScene(const std::string& filePath) {
     inFile.read(reinterpret_cast<char*>(&gameObjectCount), sizeof(gameObjectCount));
 
     for (size_t i = 0; i < gameObjectCount; ++i) {
-        GameObject gameObject;
-
-        /*Camera::UpdateCamera();
-            gameObject.AddComponent<TransformComponent>(*/
-            // Load GameObject name
-        size_t nameLength;
-        inFile.read(reinterpret_cast<char*>(&nameLength), sizeof(nameLength));
-        std::string name(nameLength, '\0');
-        inFile.read(name.data(), nameLength);
-        gameObject.setName(name);
-        //if (name == "Test Camera") { // Identificamos la cámara por su nombre, puedes ajustar esto según el criterio
-        //    gameObject.AddComponent<CameraComponent>();
-        //    auto cameraComponent = gameObject.GetComponent<CameraComponent>();
-
-        //    // Puedes cargar parámetros adicionales como el fov, aspect, etc., si son necesarios.
-        //    std::list<Plane> frustumPlanes;
-        //    size_t planesCount;
-        //    inFile.read(reinterpret_cast<char*>(&planesCount), sizeof(planesCount));
-        //    for (size_t j = 0; j < planesCount; ++j) {
-        //        Plane plane;
-        //        inFile.read(reinterpret_cast<char*>(&plane), sizeof(Plane));
-        //        frustumPlanes.push_back(plane);
-        //    }
-        //    cameraComponent->camera().frustumPlanesList = frustumPlanes;
-        //}
-        // 
-   //     if (gameObject.name == "Test Camera") {
-            //gameObject.AddComponent<CameraComponent>();
-   //         drawFrustum(gameObject); // Dibujar el frustum de la cámara de prueba (testCamera
-   //         gameObject.GetComponent<CameraComponent>()->camera().transform() = gameObject.GetComponent<TransformComponent>()->transform();
-   //         auto frustumPlanes = gameObject.GetComponent<CameraComponent>()->camera().frustumPlanes();
-   //     }
-
-
-            // Load Transform
-        glm::vec3 position, scale, rotation;
-        inFile.read(reinterpret_cast<char*>(&position), sizeof(position));
-        inFile.read(reinterpret_cast<char*>(&scale), sizeof(scale));
-        inFile.read(reinterpret_cast<char*>(&rotation), sizeof(rotation));
-
-        Transform transform;
-        transform.translate(position);
-        transform.setScale(scale);
-        transform.setRotation(glm::radians(rotation.x), glm::radians(rotation.y), glm::radians(rotation.z));
-
-        // Load Mesh
-        bool hasMesh;
-        inFile.read(reinterpret_cast<char*>(&hasMesh), sizeof(hasMesh));
-        if (hasMesh) {
-            auto mesh = std::make_shared<Mesh>();
-
-            // Load vertices
-            size_t vertexCount;
-            inFile.read(reinterpret_cast<char*>(&vertexCount), sizeof(vertexCount));
-            std::vector<glm::vec3> vertices(vertexCount);
-            inFile.read(reinterpret_cast<char*>(vertices.data()), vertexCount * sizeof(glm::vec3));
-
-            // Load indices
-            size_t indexCount;
-            inFile.read(reinterpret_cast<char*>(&indexCount), sizeof(indexCount));
-            std::vector<unsigned int> indices(indexCount);
-            inFile.read(reinterpret_cast<char*>(indices.data()), indexCount * sizeof(unsigned int));
-
-            // Load texture coordinates
-            size_t texCoordCount;
-            inFile.read(reinterpret_cast<char*>(&texCoordCount), sizeof(texCoordCount));
-            std::vector<glm::vec2> texCoords(texCoordCount);
-            inFile.read(reinterpret_cast<char*>(texCoords.data()), texCoordCount * sizeof(glm::vec2));
-
-            // Load bounding box
-            BoundingBox boundingBox;
-            inFile.read(reinterpret_cast<char*>(&boundingBox), sizeof(BoundingBox));
-
-            mesh->load(vertices.data(), vertices.size(), indices.data(), indices.size());
-            if (!texCoords.empty()) {
-                mesh->loadTexCoords(texCoords.data(), texCoords.size());
-            }
-
-            // Add Mesh to GameObject
-            gameObject.setMesh(mesh);
-        }
-
-        gameObject.AddComponent<TransformComponent>()->transform() = transform;
+        auto gameObject = loadGameObject(inFile);
         SceneManager::gameObjectsOnScene.push_back(gameObject);
     }
 
     inFile.close();
     Console::Instance().Log("Scene loaded from " + filePath);
-
 }
