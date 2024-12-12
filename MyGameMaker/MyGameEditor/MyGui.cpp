@@ -687,6 +687,7 @@ void MyGUI::renderInspector() {
             static bool showCheckerTexture = false;
             ImGui::Text("Width: %d", texture.image().width());
             ImGui::Text("Heiht: %d", texture.image().height());
+            ImGui::Text("Texture Path: %s", persistentSelectedObject->modelPath.data());
 
             if (ImGui::Button("Toggle Checker Texture")) {
                 showCheckerTexture = !showCheckerTexture;
