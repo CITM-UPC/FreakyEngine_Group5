@@ -339,10 +339,9 @@ int main(int argc, char* argv[]) {
     SceneManager::gameObjectsOnScene.push_back(testCamera);
     testCamera.GetComponent<CameraComponent>()->camera().transform().pos() = vec3(0, 1, 4);
     testCamera.GetComponent<CameraComponent>()->camera().transform().rotate(glm::radians(180.0), vec3(0, 1, 0));
-    //SceneManager::spawnBakerHouse();
+  
 
-    //SceneManager::spawnBakerHouse();
-	GameObject scene2 = SceneImporter::loadFromFile("Assets/strawberry.fbx");
+	GameObject scene2 = SceneImporter::loadFromFile("Assets/bakerhouse.fbx");
 	//GameObject scene3 = SceneImporter::loadFromFile("Assets/Street environment_V01.fbx");
 	//GameObject scene3 = SceneImporter::loadFromFile("Assets/street2.fbx");
 
@@ -400,15 +399,15 @@ int main(int argc, char* argv[]) {
                 
                 // Crear figuras en la posición 3D calculada
                 switch (event.key.keysym.sym) {
-                case SDLK_1:  // Crear Triángulo
+                case SDLK_i:  // Crear Triángulo
                     BasicShapesManager::createFigure(1, SceneManager::gameObjectsOnScene, 1.0, mouseWorldPos);
                     SceneManager::selectedObject = &SceneManager::gameObjectsOnScene.back();
                     break;
-                case SDLK_2:  // Crear Cuadrado
+                case SDLK_o:  // Crear Cuadrado
                     BasicShapesManager::createFigure(2, SceneManager::gameObjectsOnScene, 1.0, mouseWorldPos);
                     SceneManager::selectedObject = &SceneManager::gameObjectsOnScene.back();
                     break;
-                case SDLK_3:  // Crear Cubo
+                case SDLK_p:  // Crear Cubo
                     BasicShapesManager::createFigure(3, SceneManager::gameObjectsOnScene, 1.0, mouseWorldPos);
                     SceneManager::selectedObject = &SceneManager::gameObjectsOnScene.back();
                     break;

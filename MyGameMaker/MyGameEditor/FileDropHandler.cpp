@@ -1,6 +1,6 @@
 #include "FileDropHandler.h"
 #include <iostream>
-#include "Console.h" // Include for logging
+#include "Console.h" 
 #include "SceneManager.h"
 #include <SDL2/SDL_mouse.h>
 #include "MyGameEngine/Image.h"
@@ -21,15 +21,11 @@ void FileDropHandler::handleFileDrop(const std::string& filePath, const glm::mat
 
         auto mesh = std::make_shared<Mesh>();
         mesh = modelImporter.ImportModel(filePath.c_str());
-        modelImporter.SaveMeshToFile(mesh, "Library/CustomFreaks/StandardFreak" + std::to_string(freakCounter) + ".freak");
+        modelImporter.SaveMeshToFile(mesh, "Assets/Library/CustomFreaks/StandardFreak" + std::to_string(freakCounter) + ".freak");
         freakCounter++;
 
         SceneImporter::loadFromFile(filePath);
   
-        
-       /* SceneManager::getGameObject(SceneManager::gameObjectsOnScene.size() - 1)->transform().pos() =
-            screenToWorld(glm::vec2(mouseX, mouseY), 10.0f, projection, view);*/
-        
 
   
         SceneManager::selectedObject = &SceneManager::gameObjectsOnScene.back();
@@ -42,7 +38,8 @@ void FileDropHandler::handleFileDrop(const std::string& filePath, const glm::mat
             auto imageTexture = std::make_shared<Image>();
             imageTexture = textureImporter.loadTexture(filePath.c_str());
 			hitObject->texturePath = filePath;
-            textureImporter.SaveTextureToFile(imageTexture, "Library/CustomTexture/StandardTexture" + std::to_string(textureCounter) + ".texture");
+            textureImporter.SaveTextureToFile(imageTexture, "Assets/Library/CustomTexture/StandardTexture" + std::to_string(textureCounter) + ".texture");
+			textureCounter++;
             Console::Instance().Log("Texture applied to GameObject under mouse.");
         }
         else {
@@ -78,11 +75,11 @@ void FileDropHandler::handleFileDrop(const std::string& filePath, const glm::mat
         // Intentamos cargar la escena desde el archivo .scene
         try {
             // Llamar a la función correcta para cargar la escena
-            SceneImporter::loadFromFile(filePath);
+            SceneManager::loadScene(filePath);
 
             // Si se desea, se puede establecer el primer objeto cargado como el seleccionado
             if (!SceneManager::gameObjectsOnScene.empty()) {
-                SceneManager::selectedObject = &SceneManager::gameObjectsOnScene.back();  // O el primer objeto, según el caso
+                SceneManager::selectedObject = &SceneManager::gameObjectsOnScene.back(); 
             }
 
             Console::Instance().Log("Scene loaded successfully from " + filePath);

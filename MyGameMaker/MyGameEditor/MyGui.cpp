@@ -641,7 +641,7 @@ void MyGUI::renderInspector() {
 
             // Controles para la rotación
             ImGui::Text("Rotation:");
-            glm::vec3 inputRotation = rotation;
+            static glm::vec3 inputRotation = rotation;
             if (ImGui::DragFloat("X##rot", &inputRotation.x, 0.1f, -360.0f, 360.0f, "%.3f")) {
                 transform.setRotation(glm::radians(inputRotation.x), glm::radians(inputRotation.y), glm::radians(inputRotation.z));
             }
