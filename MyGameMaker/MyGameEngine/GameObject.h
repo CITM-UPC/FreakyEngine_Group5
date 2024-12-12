@@ -48,6 +48,8 @@ public:
 
     int id = 0;
     std::string modelPath;
+    std::string meshPath;
+    std::string texturePath;
 
     bool operator==(const GameObject& other) const {
         // Comparar los objetos por el nombre, o cualquier criterio único

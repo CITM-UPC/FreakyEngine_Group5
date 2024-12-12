@@ -2,7 +2,7 @@
 
 #include <memory>
 #include "Image.h"
-
+#include <string>
 
 class Texture
 {
@@ -17,6 +17,8 @@ private:
 	std::shared_ptr<Image> _img_ptr;
 
 public:
+
+    std::string path;
 	unsigned int id() const { return _img_ptr ? _img_ptr->id() : 0; }
 	void bind() const;
 	void setImage(const std::shared_ptr<Image>& img_ptr) { _img_ptr = img_ptr; }

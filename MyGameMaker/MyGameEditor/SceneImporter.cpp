@@ -72,7 +72,8 @@ static glm::vec3 quaternionToEuler(const glm::quat& q) {
 }
 
 
-GameObject graphicObjectFromNode(const aiScene& scene, const aiNode& node, const vector<shared_ptr<Mesh>>& meshes, const vector<shared_ptr<Material>>& materials, bool isFromStreet2) {
+GameObject graphicObjectFromNode(const aiScene& scene, const aiNode& node, const vector<shared_ptr<Mesh>>& meshes, const vector<shared_ptr<Material>>& materials, bool isFromStreet2, const std::string& path){	
+	
 	GameObject obj;
 
 	mat4 localMatrix = aiMat4ToMat4(node.mTransformation);
@@ -118,11 +119,13 @@ GameObject graphicObjectFromNode(const aiScene& scene, const aiNode& node, const
 		obj.texture() = material->texture;
 		obj.setTextureImage(material->texture.imagePtr());
 		obj.setMaterial(material);
+		obj.modelPath = path;
+		obj.texturePath = material->texture.path;
 		SceneManager::gameObjectsOnScene.push_back(obj);
 	}
 
 	for (unsigned int i = 0; i < node.mNumChildren; ++i) {
-		graphicObjectFromNode(scene, *node.mChildren[i], meshes, materials, isFromStreet2);
+		graphicObjectFromNode(scene, *node.mChildren[i], meshes, materials, isFromStreet2,path);
 	}
 
 	return obj;
@@ -172,6 +175,7 @@ static vector<shared_ptr<Material>> createMaterialsFromFBX(const aiScene& scene,
 			fbx_material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);
 			const string textureFileName = fs::path(texturePath.C_Str()).filename().string();
 			const auto image_itr = images.find(textureFileName);
+			material.get()->texture.path = texturePath.C_Str();
 			if (image_itr != images.end()) material->texture.setImage(image_itr->second);
 			else {
 				auto image = ImageImporter::loadFromFile((basePath / textureFileName).string());
@@ -206,10 +210,15 @@ GameObject SceneImporter::loadFromFile(const std::string& path) {
 	const auto materials = createMaterialsFromFBX(*fbx_scene, fs::absolute(path).parent_path());
 	GameObject fbx_obj;
 	if (path == "Assets/street2.fbx") {
-		 fbx_obj = graphicObjectFromNode(*fbx_scene, *fbx_scene->mRootNode, meshes, materials, true);
+		 fbx_obj = graphicObjectFromNode(*fbx_scene, *fbx_scene->mRootNode, meshes, materials, true,path);
 	}
 	else {
-		fbx_obj = graphicObjectFromNode(*fbx_scene, *fbx_scene->mRootNode, meshes, materials,false);
+		fbx_obj = graphicObjectFromNode(*fbx_scene, *fbx_scene->mRootNode, meshes, materials,false,path);
+
+	}
+	fbx_obj.modelPath = path;
+	if (fbx_obj.material().get() != nullptr) {
+		fbx_obj.texturePath = fbx_obj.material().get()->texture.path;
 
 	}
 	aiReleaseImport(fbx_scene);

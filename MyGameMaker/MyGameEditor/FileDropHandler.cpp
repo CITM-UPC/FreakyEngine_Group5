@@ -4,7 +4,7 @@
 #include "SceneManager.h"
 #include <SDL2/SDL_mouse.h>
 #include "MyGameEngine/Image.h"
-
+#include "SceneImporter.h"
 
 
 
@@ -24,10 +24,14 @@ void FileDropHandler::handleFileDrop(const std::string& filePath, const glm::mat
         modelImporter.SaveMeshToFile(mesh, "Library/CustomFreaks/StandardFreak" + std::to_string(freakCounter) + ".freak");
         freakCounter++;
 
-        SceneManager::LoadGameObject(filePath);
+        SceneImporter::loadFromFile(filePath);
+  
+        
        /* SceneManager::getGameObject(SceneManager::gameObjectsOnScene.size() - 1)->transform().pos() =
             screenToWorld(glm::vec2(mouseX, mouseY), 10.0f, projection, view);*/
         
+
+  
         SceneManager::selectedObject = &SceneManager::gameObjectsOnScene.back();
     }
     else if (extension == "png" || extension == "jpg" || extension == "bmp") {
@@ -37,6 +41,7 @@ void FileDropHandler::handleFileDrop(const std::string& filePath, const glm::mat
             hitObject->setTextureImage(imageTexture);
             auto imageTexture = std::make_shared<Image>();
             imageTexture = textureImporter.loadTexture(filePath.c_str());
+			hitObject->texturePath = filePath;
             textureImporter.SaveTextureToFile(imageTexture, "Library/CustomTexture/StandardTexture" + std::to_string(textureCounter) + ".texture");
             Console::Instance().Log("Texture applied to GameObject under mouse.");
         }
@@ -50,10 +55,11 @@ void FileDropHandler::handleFileDrop(const std::string& filePath, const glm::mat
         auto mesh = std::make_shared<Mesh>();
         GameObject go;
         mesh = modelImporter.LoadModelFromFile(filePath);
-        go.modelPath = filePath;
         go.setMesh(mesh);
         SceneManager::gameObjectsOnScene.push_back(go);
         int newID = SceneManager::gameObjectsOnScene[SceneManager::gameObjectsOnScene.size() - 1].id;
+
+   
         go.id = newID + 1;
 
     }
@@ -72,7 +78,7 @@ void FileDropHandler::handleFileDrop(const std::string& filePath, const glm::mat
         // Intentamos cargar la escena desde el archivo .scene
         try {
             // Llamar a la función correcta para cargar la escena
-            SceneManager::loadScene(filePath);
+            SceneImporter::loadFromFile(filePath);
 
             // Si se desea, se puede establecer el primer objeto cargado como el seleccionado
             if (!SceneManager::gameObjectsOnScene.empty()) {

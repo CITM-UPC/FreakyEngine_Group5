@@ -668,6 +668,10 @@ void MyGUI::renderInspector() {
         }
 
         if (persistentSelectedObject->hasMesh() && ImGui::CollapsingHeader("Mesh")) {
+            ImGui::PushTextWrapPos(ImGui::GetContentRegionAvail().x);
+
+            ImGui::Text("Mesh Path: %s", persistentSelectedObject->modelPath.c_str());
+            ImGui::PopTextWrapPos();
             Mesh& mesh = persistentSelectedObject->mesh();
 
             static bool showNormalsPerTriangle = false;
@@ -687,8 +691,9 @@ void MyGUI::renderInspector() {
             static bool showCheckerTexture = false;
             ImGui::Text("Width: %d", texture.image().width());
             ImGui::Text("Heiht: %d", texture.image().height());
-            ImGui::Text("Texture Path: %s", persistentSelectedObject->modelPath.data());
-
+            ImGui::PushTextWrapPos(ImGui::GetContentRegionAvail().x);
+            ImGui::Text("Texture Path: %s", persistentSelectedObject->texturePath.c_str());
+            ImGui::PopTextWrapPos();
             if (ImGui::Button("Toggle Checker Texture")) {
                 showCheckerTexture = !showCheckerTexture;
                 persistentSelectedObject->hasCheckerTexture = showCheckerTexture;
